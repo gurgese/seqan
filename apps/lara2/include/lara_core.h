@@ -447,10 +447,11 @@ void saveBestAligns(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alig
 
 
 void updateLambda(TRnaAlign & rnaAlign) {
-//    std::cout << "updateLambda function" << std::endl;
+    std::cout << "updateLambda function" << std::endl;
     for (size_t i = 0; i < length(rnaAlign.upperBoundVect); ++i) {
         struct boundStruct const & ub = rnaAlign.upperBoundVect[i];
-
+        std::cout << i << "\t" << ub.seq1Index << "\t" << ub.seq1IndexPairLine << "\t" << ub.seq2IndexPairLine << std::endl;
+/*
         if (ub.maxProbScoreLine > 0) {
             struct lambWeightStruct & lambWeight = rnaAlign.lamb[ub.seq1Index].map[i];
 
@@ -475,7 +476,7 @@ void updateLambda(TRnaAlign & rnaAlign) {
                 lambWeight.seq1IndexPairLine = ub.seq1IndexPairLine;
                 lambWeight.seq2IndexPairLine = ub.seq2IndexPairLine;
             }
-        }
+        }*/
     }
 }
 #endif //_INCLUDE_ALIGNMENT_EDGES_H_

@@ -49,7 +49,7 @@
 #include <string>
 #include <limits>
 #include <sstream>
-#include <omp.h>
+//#include <omp.h>
 #include <ctime>
 
 // ----------------------------------------------------------------------------
@@ -162,7 +162,7 @@ int main (int argc, char const ** argv)
     double lemtime = 0.0;
     double boutime = 0.0;
 
-#pragma omp parallel for num_threads(options.threads)
+//#pragma omp parallel for num_threads(options.threads)
     for (unsigned i = 0; i < length(alignsSimd); ++i)
     {
         resize(rnaAligns[i].lamb, length(setH[i]));  // length of longer sequence
@@ -330,7 +330,7 @@ int main (int argc, char const ** argv)
         // All structural alignment is computed
         simdAlignsGlobalLocal(resultsSimd, alignsSimd, rnaAligns, options);
         checkEraseV = false;
-#pragma omp parallel for num_threads(options.threads)
+//#pragma omp parallel for num_threads(options.threads)
         for (unsigned i = 0; i < length(alignsSimd); ++i) // TODO replace this function with the SIMD implementation for execute in PARALLEL
         {
 
@@ -478,7 +478,7 @@ int main (int argc, char const ** argv)
 
     rnaAligns.insert( rnaAligns.end(), goldRnaAligns.begin(), goldRnaAligns.end() );
 
-    if(rnaAligns.size() > 1) // This is a multiple alignment an the T-Coffee library must be printed
+    if(rnaAligns.size() > 0) // This is a multiple alignment an the T-Coffee library must be printed
     {
         createTCoffeeLib(options, singleOrDoubleInFile, filecontents1, filecontents2, rnaAligns);
     }

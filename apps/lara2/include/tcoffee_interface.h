@@ -98,7 +98,7 @@ typedef tcoffeeLib TTCoffeeLib;
 // ----------------------------------------------------------------------------
 
 template <typename TOption>
-void computeTCoffeWeightsProportional(tcoffeePair & tcPair, TOption const & options, RnaRecord const & rna1,
+void computeTCoffeWeightsProportional(tcoffeePair & tcPair, SEQAN_UNUSED TOption const & options, RnaRecord const & rna1,
                                       RnaRecord const & rna2, TRnaAlign & rnaAlign)
 {
 //    std::cout << rnaAlign.forMinBound.bestAlign;
@@ -133,7 +133,7 @@ void computeTCoffeWeightsProportional(tcoffeePair & tcPair, TOption const & opti
 // ----------------------------------------------------------------------------
 
 template <typename TOption>
-void computeTCoffeWeightsSwitch(tcoffeePair & tcPair, TOption const & options, RnaRecord const & rna1,
+void computeTCoffeWeightsSwitch(tcoffeePair & tcPair, SEQAN_UNUSED TOption const & options, RnaRecord const & rna1,
                                       RnaRecord const & rna2, TRnaAlign & rnaAlign)
 {
 //    std::cout << rnaAlign.forMinBound.bestAlign;
@@ -168,7 +168,7 @@ void computeTCoffeWeightsSwitch(tcoffeePair & tcPair, TOption const & options, R
 // ----------------------------------------------------------------------------
 
 template <typename TOption>
-void computeTCoffeWeightsSeqAlignOnly(tcoffeePair & tcPair, TOption const & options, RnaRecord const & rna1,
+void computeTCoffeWeightsSeqAlignOnly(tcoffeePair & tcPair, SEQAN_UNUSED TOption const & options, RnaRecord const & rna1,
                                       RnaRecord const & rna2, TRnaAlign & rnaAlign)
 {
 //    std::cout << rnaAlign.forMinBound.bestAlign;

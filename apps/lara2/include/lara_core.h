@@ -187,11 +187,12 @@ void computeBounds(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
 //  Clear the maxProbScoreLine of the upper bound
     for(unsigned i = 0; i < length(rnaAlign.upperBoundVect); ++i)
     {
-        rnaAlign.upperBoundVect[i].maxProbScoreLine = 0;
+        rnaAlign.upperBoundVect[i].maxProbScoreLine = 0; // init linescore with 0
     }
     for(unsigned i = 0; i < rnaAlign.maskIndex - 1; ++i)
     {
         String<unsigned> adjVect1;
+        // get all interacting positions for current mask[i]
         getVertexAdjacencyVector(adjVect1, graph1.inter, rnaAlign.mask[i].first);
         for (unsigned j = 0; j < length(adjVect1) && adjVect1[j] >= rnaAlign.mask[i].first; ++j)
         {
@@ -447,16 +448,14 @@ void saveBestAligns(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alig
 
 
 void updateLambda(TRnaAlign & rnaAlign) {
-    std::cout << "updateLambda function" << std::endl;
     for (size_t i = 0; i < length(rnaAlign.upperBoundVect); ++i) {
         struct boundStruct const & ub = rnaAlign.upperBoundVect[i];
-        std::cout << i << "\t" << ub.seq1Index << "\t" << ub.seq1IndexPairLine << "\t" << ub.seq2IndexPairLine << std::endl;
-/*
+
         if (ub.maxProbScoreLine > 0) {
             struct lambWeightStruct & lambWeight = rnaAlign.lamb[ub.seq1Index].map[i];
 
             // the edges are not paired
-            if (ub.seq1Index != rnaAlign.upperBoundVect[ub.seq1IndexPairLine].seq1IndexPairLine)
+            if (ub.seq1Index != rnaAlign.upperBoundVect[ub.seq2IndexPairLine].seq1IndexPairLine)
             {
                 if (ub.seq1Index < ub.seq1IndexPairLine)
                 {
@@ -476,7 +475,7 @@ void updateLambda(TRnaAlign & rnaAlign) {
                 lambWeight.seq1IndexPairLine = ub.seq1IndexPairLine;
                 lambWeight.seq2IndexPairLine = ub.seq2IndexPairLine;
             }
-        }*/
+        }
     }
 }
 #endif //_INCLUDE_ALIGNMENT_EDGES_H_

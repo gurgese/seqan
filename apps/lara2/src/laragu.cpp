@@ -170,6 +170,8 @@ int main (int argc, char const ** argv)
         resize(rnaAligns[i].upperBoundVect, length(setV[i]));  // length of shorter sequence
         rnaAligns[i].my = options.my;
 
+        SEQAN_ASSERT_LEQ(length(setV[i]), length(setH[i]));
+
 // Save the best alignments that give the absolute maximum score
 //        saveBestAlign(rnaAligns[i], alignsSimd[i], resultsSimd[i]);
 // Create the mask of the current alignment to be used for the upper, lower bound computation and the lamb update
@@ -177,10 +179,11 @@ int main (int argc, char const ** argv)
 
         if(options.lowerBoundMethod == LBLEMONMWM) // The MWM is computed to fill the LowerBound
         {
+            _VV(options, "using Lemon MWM");
 //  Define the datastructure that will be passed to the lemon::MWM function to compute the full lowerBound
             TMapVect lowerBound4Lemon;
             lowerBound4Lemon.resize(rnaAligns[i].maskIndex);
-            computeBounds(rnaAligns[i], & lowerBound4Lemon);
+            computeBounds(rnaAligns[i], & lowerBound4Lemon);  // upperBoundVect receives seq indices of best pairing
             computeUpperBoundScore(rnaAligns[i]);
 // Compute the MWM with the Lemon library
             myLemon::computeLowerBoundScore(lowerBound4Lemon, rnaAligns[i]);

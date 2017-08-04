@@ -118,7 +118,7 @@ void plotOutput(TOption const & options, TRnaAlignVect & rnaAligns)
 
         _VV(options, "Alignment of sequences " << rnaAligns[i].idBppSeqH << ":" << rnaAligns[i].idBppSeqV);
         _VV(options, "Iteration where MinStepSize has been found " << rnaAligns[i].forScore.it);
-        _VV(options, "Best alignment based on the Score is " << rnaAligns[i].forScore.bestAlignScore << "\n" <<  rnaAligns[i].forMinBound.bestAlign);
+        _VV(options, "Best alignment based on the Score is " << rnaAligns[i].forScore.bestAlignScore << "\n" <<  rnaAligns[i].forScore.bestAlign);
         _VV(options, "Best Lower bound is " << rnaAligns[i].forScore.lowerBound);
         _VV(options, "Best Upper bound is " << rnaAligns[i].forScore.upperBound);
         _VV(options, "Minumum step size is " << rnaAligns[i].forScore.stepSizeBound);

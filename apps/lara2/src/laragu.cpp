@@ -456,7 +456,18 @@ int main (int argc, char const ** argv)
                 }
             }
         }
-        if (options.verbose > 0) std::cerr << "|";
+        //if (options.verbose > 0) std::cerr << "|";
+
+        //--------------------
+        std::cout << x << "\talign row1: " << length(row(rnaAligns[0].forMinBound.bestAlign, 0)) << " ";
+        for (auto c : row(rnaAligns[0].forMinBound.bestAlign, 0))
+            std::cout << c;
+        std::cout << std::endl << "\talign row2: " << length(row(rnaAligns[0].forMinBound.bestAlign, 1)) << " ";
+        for (auto c : row(rnaAligns[0].forMinBound.bestAlign, 1))
+            std::cout << c;
+        std::cout << std::endl;
+        //--------------------
+
     }
     if (options.verbose > 0) std::cerr << std::endl;
     _VV(options, "map computation time = " << boutime << "\nlemon MWM time       = " << lemtime

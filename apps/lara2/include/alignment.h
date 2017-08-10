@@ -52,13 +52,15 @@
 // ----------------------------------------------------------------------------
 
 template <typename TOption>
-void bppInteractionGraphBuild(TRnaVect & rnaSeqs, TOption const & options)
+void bppInteractionGraphBuild(TRnaVect & rnaRecordVector, TOption const & options)
 {
-#pragma omp parallel for num_threads(options.threads)
-    for (typename Size<TRnaVect>::Type i = 0; i < length(rnaSeqs); ++i)
+    bool const logStructureScoring = options.structureScoring == LOGARITHMIC;
+
+//#pragma omp parallel for num_threads(options.threads)
+    for (typename Size<TRnaVect>::Type idx = 0; idx < length(rnaRecordVector); ++idx)
     {
-        if (empty(rnaSeqs[i].bppMatrGraphs))  // if dotplot or extended bpseq data are not present
-            computeBppMatrix(rnaSeqs[i], options);
+        if (empty(rnaRecordVector[idx].bppMatrGraphs))  // if dotplot or extended bpseq data are not present
+            computeBppMatrix(rnaRecordVector[idx], options.thrBppm, logStructureScoring);
     }
 }
 
@@ -134,20 +136,20 @@ void simdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & alignsSimd,
     {
         if (options.affineLinearDgs == 0)
         {
-#pragma omp parallel for num_threads(options.threads)
+//#pragma omp parallel for num_threads(options.threads)
             for (unsigned i = 0; i < length(alignsSimd); ++i) // TODO replace this function with the SIMD implementation for execute in PARALLEL
                 resultsSimd[i] = globalAlignment(alignsSimd[i], rnaAligns[i].structScore, AffineGaps());
 
         }
         else if (options.affineLinearDgs == 1)
         {
-#pragma omp parallel for num_threads(options.threads)
+//#pragma omp parallel for num_threads(options.threads)
             for (unsigned i = 0; i < length(alignsSimd); ++i) // TODO replace this function with the SIMD implementation for execute in PARALLEL
                 resultsSimd[i] = globalAlignment(alignsSimd[i], rnaAligns[i].structScore, LinearGaps());
 
         }
         else {
-#pragma omp parallel for num_threads(options.threads)
+//#pragma omp parallel for num_threads(options.threads)
             for (unsigned i = 0; i < length(alignsSimd); ++i) // TODO replace this function with the SIMD implementation for execute in PARALLEL
                 resultsSimd[i] = globalAlignment(alignsSimd[i], rnaAligns[i].structScore, DynamicGaps());
 
@@ -157,20 +159,20 @@ void simdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & alignsSimd,
     {
         if (options.affineLinearDgs == 0)
         {
-#pragma omp parallel for num_threads(options.threads)
+//#pragma omp parallel for num_threads(options.threads)
             for (unsigned i = 0; i < length(alignsSimd); ++i) // TODO replace this function with the SIMD implementation for execute in PARALLEL
                 resultsSimd[i] = localAlignment(alignsSimd[i], rnaAligns[i].structScore, AffineGaps());
 
         }
         else if (options.affineLinearDgs == 1)
         {
-#pragma omp parallel for num_threads(options.threads)
+//#pragma omp parallel for num_threads(options.threads)
             for (unsigned i = 0; i < length(alignsSimd); ++i) // TODO replace this function with the SIMD implementation for execute in PARALLEL
                 resultsSimd[i] = localAlignment(alignsSimd[i], rnaAligns[i].structScore, LinearGaps());
 
         }
         else {
-#pragma omp parallel for num_threads(options.threads)
+//#pragma omp parallel for num_threads(options.threads)
             for (unsigned i = 0; i < length(alignsSimd); ++i) // TODO replace this function with the SIMD implementation for execute in PARALLEL
                 resultsSimd[i] = localAlignment(alignsSimd[i], rnaAligns[i].structScore, DynamicGaps());
 
@@ -247,30 +249,31 @@ void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect & rnaAligns,
 }
 
 // combination of all sequences of two sets
-bool crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect & rnaAligns,
+void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect & rnaAligns,
                   TRnaVect & seqs1, TRnaVect & seqs2) {
-    if (empty(seqs2)) {
-        crossproduct(setH, setV, rnaAligns, seqs1);
-        return false;
-    }
-
-    reserve(setH, length(seqs1) * length(seqs2));
-    reserve(setV, length(seqs1) * length(seqs2));
-    resize(rnaAligns, length(seqs1) * length(seqs2));
-    TRnaAlignVect::iterator alignInfo = rnaAligns.begin();
-
-    unsigned p = 0;
-    for (TRnaVect::iterator it1 = seqs1.begin(); it1 != seqs1.end(); ++it1)
+    if (empty(seqs2))
     {
-        for (TRnaVect::iterator it2 = seqs2.begin(); it2 != seqs2.end(); ++it2)
+        crossproduct(setH, setV, rnaAligns, seqs1);
+    }
+    else
+    {
+        reserve(setH, length(seqs1) * length(seqs2));
+        reserve(setV, length(seqs1) * length(seqs2));
+        resize(rnaAligns, length(seqs1) * length(seqs2));
+        TRnaAlignVect::iterator alignInfo = rnaAligns.begin();
+
+        unsigned p = 0;
+        for (TRnaVect::iterator it1 = seqs1.begin(); it1 != seqs1.end(); ++it1)
         {
-            _fillVectors(setH, setV, alignInfo, it1, it2);
-            rnaAligns[p].idBppSeqH = std::distance(seqs1.begin(), it1);
-            rnaAligns[p].idBppSeqV = std::distance(seqs2.begin(), it2);
-            ++p;
+            for (TRnaVect::iterator it2 = seqs2.begin(); it2 != seqs2.end(); ++it2)
+            {
+                _fillVectors(setH, setV, alignInfo, it1, it2);
+                rnaAligns[p].idBppSeqH = std::distance(seqs1.begin(), it1);
+                rnaAligns[p].idBppSeqV = std::distance(seqs2.begin(), it2);
+                ++p;
+            }
         }
     }
-    return true;
 }
 
 #endif //_INCLUDE_STRUCT_ALIGN_H_

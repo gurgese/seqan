@@ -91,6 +91,7 @@ using namespace seqan;
 
 int main (int argc, char const ** argv)
 {
+    // Argument Parser
     if (argc == 1)
     {
         std::cout << "type " << argv[0] << " --help to get the parameters table (-i option is mandatory)" << std::endl;
@@ -102,28 +103,28 @@ int main (int argc, char const ** argv)
     setupArgumentParser(parser, options);
     ArgumentParser::ParseResult res;
     res = parse(options, parser, argc, argv); // Fill the options structure with the standard and the acquired arguments
-    if (res != ArgumentParser::PARSE_OK)  // Check the arguments
-        return res == ArgumentParser::PARSE_ERROR;
+    if (res != ArgumentParser::ParseResult::PARSE_OK)  // Check the arguments
+        return res == ArgumentParser::ParseResult::PARSE_ERROR ? 1 : 0;
 
-    // read input files
+    // Read input files
     RnaStructContents filecontents1;
-    RnaStructContents filecontents2;
     _readRnaInputFile(filecontents1, options.inFile, options);
+    RnaStructContents filecontents2;
     _readRnaInputFile(filecontents2, options.inFileRef, options);
-    _V(options, "Read " << length(filecontents1.records) << " and " << length(filecontents2.records)
-                         << " records from input files.");
 
-    // add the weight interaction edges vector map in the data structure using Vienna package
+    _V(options, "Read " << length(filecontents1.records) << " and "
+                        << length(filecontents2.records) << " records from input files.");
+
+    // Add the weight interaction edges vector map in the data structure using Vienna package
     bppInteractionGraphBuild(filecontents1.records, options);
     bppInteractionGraphBuild(filecontents2.records, options);
+    std::cout << filecontents1.records.front().bppMatrGraphs[0].inter << std::endl;
 
-    // Single or double inFile this flag is used for te generation of T-Coffee lib
-    bool singleOrDoubleInFile;
     // create pairwise alignments
     RnaSeqSet setH;
     RnaSeqSet setV;
     TRnaAlignVect rnaAligns;
-    singleOrDoubleInFile = crossproduct(setH, setV, rnaAligns, filecontents1.records, filecontents2.records);
+    crossproduct(setH, setV, rnaAligns, filecontents1.records, filecontents2.records);
 
 //  Create the alignment data structure that will host the alignments with small difference between upper and lower bound
     TRnaAlignVect goldRnaAligns;
@@ -297,6 +298,7 @@ int main (int argc, char const ** argv)
         }
 
     }
+    printRnaStructAlign(rnaAligns[0], 0);
 
     if (checkEraseV)
     {
@@ -441,6 +443,20 @@ int main (int argc, char const ** argv)
             saveBestAligns(rnaAligns[i], alignsSimd[i], resultsSimd[i], x);
 //            saveBestAlignMinBound(rnaAligns[i], alignsSimd[i], resultsSimd[i], x);
         }
+        if (x == 12 || x == 13 || x == 14 ||x == 99 || x == 499)
+        {
+            printRnaStructAlign(rnaAligns[0], x);
+
+            //--------------------
+            std::cout << x << "\talign row1: " << length(row(rnaAligns[0].forMinBound.bestAlign, 0)) << " ";
+            for (auto c : row(rnaAligns[0].forMinBound.bestAlign, 0))
+                std::cout << c;
+            std::cout << "\tscore = " << resultsSimd[0] << std::endl << "\talign row2: " << length(row(rnaAligns[0].forMinBound.bestAlign, 1)) << " ";
+            for (auto c : row(rnaAligns[0].forMinBound.bestAlign, 1))
+                std::cout << c;
+            std::cout << std::endl;
+            //--------------------
+        }
 
         if (checkEraseV)
         {
@@ -457,16 +473,6 @@ int main (int argc, char const ** argv)
             }
         }
         //if (options.verbose > 0) std::cerr << "|";
-
-        //--------------------
-        std::cout << x << "\talign row1: " << length(row(rnaAligns[0].forMinBound.bestAlign, 0)) << " ";
-        for (auto c : row(rnaAligns[0].forMinBound.bestAlign, 0))
-            std::cout << c;
-        std::cout << std::endl << "\talign row2: " << length(row(rnaAligns[0].forMinBound.bestAlign, 1)) << " ";
-        for (auto c : row(rnaAligns[0].forMinBound.bestAlign, 1))
-            std::cout << c;
-        std::cout << std::endl;
-        //--------------------
 
     }
     if (options.verbose > 0) std::cerr << std::endl;
@@ -494,7 +500,7 @@ int main (int argc, char const ** argv)
 
     if(rnaAligns.size() > 0) // This is a multiple alignment an the T-Coffee library must be printed
     {
-        createTCoffeeLib(options, singleOrDoubleInFile, filecontents1, filecontents2, rnaAligns);
+        createTCoffeeLib(options, filecontents1, filecontents2, rnaAligns);
     }
 
 

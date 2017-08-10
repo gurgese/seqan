@@ -46,6 +46,8 @@
 // std headers
 // ----------------------------------------------------------------------------
 
+#include <limits>
+
 using namespace seqan;
 
 // ============================================================================
@@ -66,7 +68,7 @@ void _readRnaInputFile(RnaStructContents & filecontents, CharString filename, TO
     if (open(rnaStructFile, toCString(filename), OPEN_RDONLY))
     {
         _V(options, "Input file is RnaStruct.");
-        readRecords(filecontents, rnaStructFile, 100000u);
+        readRecords(filecontents, rnaStructFile, std::numeric_limits<unsigned>::max());
         close(rnaStructFile);
     }
     else

@@ -465,7 +465,6 @@ ArgumentParser::ParseResult parse(TOption & options, ArgumentParser & parser, in
         options.tmpDir = tmpDir;
         _V(options, "The absolute path where to create the tmpDir is " << tmpDir);
     }
-    _V(options, "Initialized the Options structure");
     setScoreMatrix(options);
 //    showScoringMatrix(options.laraScoreMatrix);
     return ArgumentParser::PARSE_OK;

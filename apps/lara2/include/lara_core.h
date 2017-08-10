@@ -451,12 +451,14 @@ void updateLambda(TRnaAlign & rnaAlign) {
     for (size_t i = 0; i < length(rnaAlign.upperBoundVect); ++i) {
         struct boundStruct const & ub = rnaAlign.upperBoundVect[i];
 
-        if (ub.maxProbScoreLine > 0) {
+        if (ub.maxProbScoreLine > 0) { // skip if no interactions
+            // get lambda struct of paired seq1 position
             struct lambWeightStruct & lambWeight = rnaAlign.lamb[ub.seq1Index].map[i];
 
-            // the edges are not paired
+            // the interaction edges are not paired
             if (ub.seq1Index != rnaAlign.upperBoundVect[ub.seq2IndexPairLine].seq1IndexPairLine)
             {
+                // if C < D add stepSize to lambda
                 if (ub.seq1Index < ub.seq1IndexPairLine)
                 {
 // TODO check if this strategy is properly working a positive score is assigned to the left-side alignments.
@@ -471,6 +473,7 @@ void updateLambda(TRnaAlign & rnaAlign) {
 // Save the maximum interaction weight to be used for the computation of profit of a line
             if (lambWeight.maxProbScoreLine < ub.maxProbScoreLine)
             {
+                std::cout << "CHANGE " << i << ": " << lambWeight.seq1IndexPairLine << "," << lambWeight.seq2IndexPairLine << "->" << ub.seq1IndexPairLine << "," << ub.seq2IndexPairLine << " \t" << lambWeight.maxProbScoreLine << "->" << ub.maxProbScoreLine << std::endl;
                 lambWeight.maxProbScoreLine = ub.maxProbScoreLine;
                 lambWeight.seq1IndexPairLine = ub.seq1IndexPairLine;
                 lambWeight.seq2IndexPairLine = ub.seq2IndexPairLine;

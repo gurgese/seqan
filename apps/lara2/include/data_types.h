@@ -122,7 +122,7 @@ typedef float TBioval;
 typedef std::map<TPosition, TScoreValue> TMap;
 typedef seqan::String<TMap > TMapLine;
 typedef std::vector<TMap > TMapVect;
-typedef std::vector<seqan::RnaRecord > TRnaVect;
+typedef std::vector<seqan::RnaRecord> TRnaVect;
 typedef StringSet<Rna5String, Dependent<Generous> > RnaSeqSet;
 
 struct boundStruct
@@ -151,9 +151,10 @@ struct lowerBoundLemonStruct
 // String with size seq2
 typedef lowerBoundLemonStruct TlowerLemonBound;
 
+// lambda value for subgradient optimization, initialized with 0
 struct lambWeightStruct
 {
-    TScoreValue step;
+    TScoreValue step;               // actual value of lambda
     TScoreValue maxProbScoreLine;
     unsigned seq1IndexPairLine;
     unsigned seq2IndexPairLine;
@@ -166,6 +167,7 @@ struct lambStruct
     std::map<TPosition, lambWeightStruct> map; //mapLine;
 };
 
+//! Lambda Vector
 typedef seqan::String<lambStruct> TLambVect;
 
 typedef seqan::Score<double, seqan::ScoreMatrix<seqan::Rna5, TRibosum> > TScoreMatrixRib;
@@ -213,7 +215,7 @@ struct RnaStructAlign
 
 // Upper bound fields
     double upperBound{};
-    TBound upperBoundVect;
+    TBound upperBoundVect; // receives interactions of MWM
 
 // Parameters used to compute the stepsize
     int slm{};
@@ -239,5 +241,21 @@ struct RnaStructAlign
 
 typedef RnaStructAlign TRnaAlign;
 typedef std::vector<TRnaAlign> TRnaAlignVect;
+
+void printRnaStructAlign(TRnaAlign & a, unsigned i)
+{
+    std::cout << i << "\tLambda Vector\n";
+    unsigned c1 = 0, c2 = 0;
+    for (lambStruct & m : a.lamb)
+    {
+        std::cout << row(a.forMinBound.bestAlign, 0)[c1++] << " ";
+        std::cout << row(a.forMinBound.bestAlign, 1)[c2++] << " ";
+        for (auto p = m.map.begin(); p != m.map.end(); ++p)
+        {
+            std::cout << "("<< p->first << "|" << p->second.step << "|" << p->second.maxProbScoreLine << "|" << p->second.seq1IndexPairLine << "|" << p->second.seq2IndexPairLine << ")";
+        }
+        std::cout << ";\n";
+    }
+}
 
 #endif //_INCLUDE_TOP_DATA_STRUCT_H_

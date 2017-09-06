@@ -48,6 +48,8 @@
 
 #include <limits>
 
+#include <seqan/rna_io.h>
+
 using namespace seqan;
 
 // ============================================================================
@@ -67,13 +69,13 @@ void _readRnaInputFile(RnaStructContents & filecontents, CharString filename, TO
     RnaStructFileIn rnaStructFile;
     if (open(rnaStructFile, toCString(filename), OPEN_RDONLY))
     {
-        _V(options, "Input file is RnaStruct.");
+        _VVV(options, "Input file is RnaStruct.");
         readRecords(filecontents, rnaStructFile, std::numeric_limits<unsigned>::max());
         close(rnaStructFile);
     }
     else
     {
-        _V(options, "Input file is Fasta/Fastq.");
+        _VVV(options, "Input file is Fasta/Fastq.");
         SeqFileIn seqFileIn(toCString(filename));
         StringSet<CharString> ids;
         StringSet<IupacString> seqs;
@@ -114,7 +116,7 @@ void plotOutput(TOption const & options, TRnaAlignVect & rnaAligns)
         _VV(options, "Minumum step size is " << rnaAligns[i].forMinBound.stepSizeBound);
         _VV(options, "UpperBoundVect can be plotted " );
 
-        _VV(options, "The step size to be used for Lambda at last iteration is " << rnaAligns[i].stepSize << "\n\n");
+        _VV(options, "The step size to be used for Lambda at last iteration is " << rnaAligns[i].stepSize << "\n");
 
         _VV(options, "+++++++ For Maximum Alignment Score +++++++" << std::endl);
 
@@ -126,7 +128,22 @@ void plotOutput(TOption const & options, TRnaAlignVect & rnaAligns)
         _VV(options, "Minumum step size is " << rnaAligns[i].forScore.stepSizeBound);
         _VV(options, "UpperBoundVect can be plotted ");
 
-        _VV(options, "The step size to be used for Lambda at last iteration is " << rnaAligns[i].stepSize << "\n\n");
+        _VV(options, "The step size to be used for Lambda at last iteration is " << rnaAligns[i].stepSize << "\n");
     }
 }
+
+String<char> getEbpseqString(RnaStructContents & filecontents)
+{
+    String<char> outstr;
+    if (length(filecontents.records) == 0)
+        return outstr;
+
+    RnaIOContext context;
+    createPseudoHeader(filecontents.header, filecontents.records);
+    writeHeader(outstr, filecontents.header, context, Ebpseq());
+    for (RnaRecord & rec : filecontents.records)
+        writeRecord(outstr, rec, context, Ebpseq());
+    return outstr;
+}
+
 #endif //_INCLUDE_LARA_IO_H_

@@ -114,7 +114,8 @@ void firstSimdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & aligns
         else
             resultsSimd = globalAlignment(alignsSimd, laraScoreMatrix, DynamicGaps());
 
-    } else
+    }
+    else
     {
         if (options.affineLinearDgs == 0)
             resultsSimd = localAlignment(alignsSimd, laraScoreMatrix, AffineGaps());
@@ -180,12 +181,11 @@ void simdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & alignsSimd,
     }
 };
 
-template <typename TAlignsSimd>
-void createSimdAligns(TAlignsSimd & alignsSimd, RnaSeqSet const & setH, RnaSeqSet const & setV)
+void createSeqanAlignments(StringSet<TAlign> & alignments, RnaSeqSet const & setH, RnaSeqSet const & setV)
 {
-    resize(alignsSimd, length(setH));
-    auto it = makeZipIterator(begin(setH), begin(setV), begin(alignsSimd));
-    auto itEnd = makeZipIterator(end(setH), end(setV), end(alignsSimd));
+    resize(alignments, length(setH));
+    auto it = makeZipIterator(begin(setH), begin(setV), begin(alignments));
+    auto itEnd = makeZipIterator(end(setH), end(setV), end(alignments));
 
     while (it != itEnd)
     {

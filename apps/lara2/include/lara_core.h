@@ -473,7 +473,7 @@ void updateLambda(TRnaAlign & rnaAlign) {
 // Save the maximum interaction weight to be used for the computation of profit of a line
             if (lambWeight.maxProbScoreLine < ub.maxProbScoreLine)
             {
-                std::cout << "CHANGE " << i << ": " << lambWeight.seq1IndexPairLine << "," << lambWeight.seq2IndexPairLine << "->" << ub.seq1IndexPairLine << "," << ub.seq2IndexPairLine << " \t" << lambWeight.maxProbScoreLine << "->" << ub.maxProbScoreLine << std::endl;
+                std::cerr << "CHANGE " << i << ": " << lambWeight.seq1IndexPairLine << "," << lambWeight.seq2IndexPairLine << "->" << ub.seq1IndexPairLine << "," << ub.seq2IndexPairLine << " \t" << lambWeight.maxProbScoreLine << "->" << ub.maxProbScoreLine << std::endl;
                 lambWeight.maxProbScoreLine = ub.maxProbScoreLine;
                 lambWeight.seq1IndexPairLine = ub.seq1IndexPairLine;
                 lambWeight.seq2IndexPairLine = ub.seq2IndexPairLine;

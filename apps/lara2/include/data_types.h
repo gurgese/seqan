@@ -244,17 +244,17 @@ typedef std::vector<TRnaAlign> TRnaAlignVect;
 
 void printRnaStructAlign(TRnaAlign & a, unsigned i)
 {
-    std::cout << i << "\tLambda Vector\n";
+    std::cerr << i << "\tLambda Vector\n";
     unsigned c1 = 0, c2 = 0;
     for (lambStruct & m : a.lamb)
     {
-        std::cout << row(a.forMinBound.bestAlign, 0)[c1++] << " ";
-        std::cout << row(a.forMinBound.bestAlign, 1)[c2++] << " ";
+        std::cerr << row(a.forMinBound.bestAlign, 0)[c1++] << " ";
+        std::cerr << row(a.forMinBound.bestAlign, 1)[c2++] << " ";
         for (auto p = m.map.begin(); p != m.map.end(); ++p)
         {
-            std::cout << "("<< p->first << "|" << p->second.step << "|" << p->second.maxProbScoreLine << "|" << p->second.seq1IndexPairLine << "|" << p->second.seq2IndexPairLine << ")";
+            std::cerr << "("<< p->first << "|" << p->second.step << "|" << p->second.maxProbScoreLine << "|" << p->second.seq1IndexPairLine << "|" << p->second.seq2IndexPairLine << ")";
         }
-        std::cout << ";\n";
+        std::cerr << ";\n";
     }
 }
 

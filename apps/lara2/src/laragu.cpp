@@ -112,51 +112,55 @@ int main (int argc, char const ** argv)
     RnaStructContents filecontents2;
     _readRnaInputFile(filecontents2, options.inFileRef, options);
 
-    _V(options, "Read " << length(filecontents1.records) << " and "
+    _VV(options, "Read " << length(filecontents1.records) << " and "
                         << length(filecontents2.records) << " records from input files.");
 
     // Add the weight interaction edges vector map in the data structure using Vienna package
     bppInteractionGraphBuild(filecontents1.records, options);
     bppInteractionGraphBuild(filecontents2.records, options);
-    std::cout << filecontents1.records.front().bppMatrGraphs[0].inter << std::endl;
+    _VV(options, getEbpseqString(filecontents1) << getEbpseqString(filecontents2));
 
-    // create pairwise alignments
+    // CREATE PAIRWISE ALIGNMENTS
+    // If one input file is given, then build unique pairs of the input sequences.
+    // If two input files are given, then build the cross product of all sequences from the first file
+    //     with all sequences from the second file.
+    // Of each pair the first sequence is stored in setH and the second sequence is stored in setV.
     RnaSeqSet setH;
     RnaSeqSet setV;
     TRnaAlignVect rnaAligns;
     crossproduct(setH, setV, rnaAligns, filecontents1.records, filecontents2.records);
+    SEQAN_ASSERT_EQ(length(setH), length(setV));
+    SEQAN_ASSERT_EQ(length(setH), length(rnaAligns));
+    _VV(options, "Number of pairwise alignments to be computed: " << length(rnaAligns));
 
-//  Create the alignment data structure that will host the alignments with small difference between upper and lower bound
-    TRnaAlignVect goldRnaAligns;
-    std::vector<bool> eraseV;
-    bool checkEraseV = false;
-
-    StringSet<TAlign> alignsSimd;
-    String<TScoreValue> resultsSimd;
-    // simd vector is created
-    createSimdAligns(alignsSimd, setH, setV);
-    eraseV.assign(length(alignsSimd), false);
-
-// timer start
+    /*
+    // timer start
     std::clock_t begin = std::clock();
     std::chrono::steady_clock::time_point beginChrono = std::chrono::steady_clock::now();
+    */
 
-// first non-structural alignment is computed
+    // A StringSet of seqan alignments is created
+    StringSet<TAlign> alignsSimd;
+    createSeqanAlignments(alignsSimd, setH, setV);
+
+    // first non-structural alignment is computed
+    String<TScoreValue> resultsSimd;
     firstSimdAlignsGlobalLocal(resultsSimd, alignsSimd, options);
+    _VV(options, "initial non-structural alignment:\n" << alignsSimd[0]);
 
-    for (unsigned i = 0; i < length(alignsSimd); ++i)
+    // bitvector that expresses whether an alignment is finished (i.e. bound difference is very small)
+    std::vector<bool> eraseV;
+    eraseV.resize(length(alignsSimd), false);
+    bool checkEraseV = false;
+
+    // apply scaling of the score matrix, according to run time parameter ssc
+    for (TRnaAlign & ali : rnaAligns)
     {
-        rnaAligns[i].structScore.score_matrix = options.laraScoreMatrix;
-        for(unsigned j = 0; j < length(options.laraScoreMatrix.data_tab[j]); ++j)
-        {
-            rnaAligns[i].structScore.score_matrix.data_tab[j] = rnaAligns[i].structScore.score_matrix.data_tab[j] /
-                                                                options.sequenceScale;
-            rnaAligns[i].structScore.score_matrix.data_gap_open = rnaAligns[i].structScore.score_matrix.data_gap_open /
-                                                                options.sequenceScale;
-            rnaAligns[i].structScore.score_matrix.data_gap_extend = rnaAligns[i].structScore.score_matrix.data_gap_extend /
-                                                                    options.sequenceScale;
-//TODO sequenceScale can be substituted from a runtime computed parameter that consider the identity of the sequences or other aspects
-        }
+        ali.structScore.score_matrix = options.laraScoreMatrix;
+        ali.structScore.score_matrix.data_gap_extend /= options.sequenceScale;
+        ali.structScore.score_matrix.data_gap_open   /= options.sequenceScale;
+        for (unsigned j = 0; j < length(options.laraScoreMatrix.data_tab[j]); ++j)
+            ali.structScore.score_matrix.data_tab[j] /= options.sequenceScale;
     }
 
     double mwmtime = 0.0;
@@ -180,7 +184,7 @@ int main (int argc, char const ** argv)
 
         if(options.lowerBoundMethod == LBLEMONMWM) // The MWM is computed to fill the LowerBound
         {
-            _VV(options, "using Lemon MWM");
+            _VVV(options, "using Lemon MWM");
 //  Define the datastructure that will be passed to the lemon::MWM function to compute the full lowerBound
             TMapVect lowerBound4Lemon;
             lowerBound4Lemon.resize(rnaAligns[i].maskIndex);
@@ -218,13 +222,13 @@ int main (int argc, char const ** argv)
             computeLowerBoundGreedy(lowerBound4Lemon, rnaAligns[i]);
             mwmtime += double(std::clock() - clstart) / CLOCKS_PER_SEC;
 
-            _VV(options, "Upper bound              = " << rnaAligns[i].upperBound);
+            _VVV(options, "Upper bound              = " << rnaAligns[i].upperBound);
 
-            _VV(options, "Lower Bound lemon primal = " << rnaAligns[i].lowerLemonBound.mwmPrimal << " \tdual = "
+            _VVV(options, "Lower Bound lemon primal = " << rnaAligns[i].lowerLemonBound.mwmPrimal << " \tdual = "
                       << rnaAligns[i].lowerLemonBound.mwmDual);
-            _VV(options, "Lower bound seqan greedy = " << rnaAligns[i].lowerGreedyBound);
-            _VV(options, "Lower bound approx       = " << rnaAligns[i].lowerBound);
-            _VV(options, "num edges (slm) = " << rnaAligns[i].slm);
+            _VVV(options, "Lower bound seqan greedy = " << rnaAligns[i].lowerGreedyBound);
+            _VVV(options, "Lower bound approx       = " << rnaAligns[i].lowerBound);
+            _VVV(options, "num edges (slm) = " << rnaAligns[i].slm);
         }
         else if(options.lowerBoundMethod == LBLINEARTIMEMWM) // using greedy algorithm
         {
@@ -251,7 +255,7 @@ int main (int argc, char const ** argv)
 
         if ((rnaAligns[i].upperBound - rnaAligns[i].lowerBound < options.epsilon))
         {
-            _VV(options, "Computation for this alignment should stopped and the bestAlignMinBounds should be returned "
+            _VV(options, "Computation for this alignment stops and the bestAlignMinBounds is returned "
                       "upper bound = " << rnaAligns[i].upperBound << " lower bound = " << rnaAligns[i].lowerBound);
 
 /*
@@ -298,7 +302,10 @@ int main (int argc, char const ** argv)
         }
 
     }
-    printRnaStructAlign(rnaAligns[0], 0);
+    // printRnaStructAlign(rnaAligns[0], 0);
+
+    // Create the alignment data structure that will host the alignments with small difference between upper and lower bound
+    TRnaAlignVect goldRnaAligns;
 
     if (checkEraseV)
     {
@@ -378,13 +385,12 @@ int main (int argc, char const ** argv)
                 computeLowerBoundGreedy(lowerBound4Lemon, rnaAligns[i]);
                 mwmtime += double(std::clock() - clstart) / CLOCKS_PER_SEC;
 
-                _VV(options, "Upper bound              = " << rnaAligns[i].upperBound);
-
-                _VV(options, "Lower Bound lemon primal = " << rnaAligns[i].lowerLemonBound.mwmPrimal << " \tdual = "
+                _VVV(options, "Upper bound              = " << rnaAligns[i].upperBound);
+                _VVV(options, "Lower Bound lemon primal = " << rnaAligns[i].lowerLemonBound.mwmPrimal << " \tdual = "
                                                            << rnaAligns[i].lowerLemonBound.mwmDual);
-                _VV(options, "Lower bound seqan greedy = " << rnaAligns[i].lowerGreedyBound);
-                _VV(options, "Lower bound approx       = " << rnaAligns[i].lowerBound);
-                _VV(options, "num edges (slm) = " << rnaAligns[i].slm);
+                _VVV(options, "Lower bound seqan greedy = " << rnaAligns[i].lowerGreedyBound);
+                _VVV(options, "Lower bound approx       = " << rnaAligns[i].lowerBound);
+                _VVV(options, "num edges (slm) = " << rnaAligns[i].slm);
             }
             else if(options.lowerBoundMethod == LBLINEARTIMEMWM) // using greedy algorithm
             {
@@ -443,18 +449,18 @@ int main (int argc, char const ** argv)
             saveBestAligns(rnaAligns[i], alignsSimd[i], resultsSimd[i], x);
 //            saveBestAlignMinBound(rnaAligns[i], alignsSimd[i], resultsSimd[i], x);
         }
-        if (x == 12 || x == 13 || x == 14 ||x == 99 || x == 499)
+        if (false && (x == 12 || x == 13 || x == 14 ||x == 99 || x == 499))
         {
             printRnaStructAlign(rnaAligns[0], x);
 
             //--------------------
-            std::cout << x << "\talign row1: " << length(row(rnaAligns[0].forMinBound.bestAlign, 0)) << " ";
+            std::cerr << x << "\talign row1: " << length(row(rnaAligns[0].forMinBound.bestAlign, 0)) << " ";
             for (auto c : row(rnaAligns[0].forMinBound.bestAlign, 0))
-                std::cout << c;
-            std::cout << "\tscore = " << resultsSimd[0] << std::endl << "\talign row2: " << length(row(rnaAligns[0].forMinBound.bestAlign, 1)) << " ";
+                std::cerr << c;
+            std::cerr << "\tscore = " << resultsSimd[0] << std::endl << "\talign row2: " << length(row(rnaAligns[0].forMinBound.bestAlign, 1)) << " ";
             for (auto c : row(rnaAligns[0].forMinBound.bestAlign, 1))
-                std::cout << c;
-            std::cout << std::endl;
+                std::cerr << c;
+            std::cerr << std::endl;
             //--------------------
         }
 
@@ -476,13 +482,15 @@ int main (int argc, char const ** argv)
 
     }
     if (options.verbose > 0) std::cerr << std::endl;
-    _VV(options, "map computation time = " << boutime << "\nlemon MWM time       = " << lemtime
+    _VVV(options, "map computation time = " << boutime << "\nlemon MWM time       = " << lemtime
                                            << "\ngreedy MWM time      = " << mwmtime);
 
-// timer stop
+    /*
+    // timer stop
     std::chrono::steady_clock::time_point endChrono= std::chrono::steady_clock::now();
     std::clock_t end = std::clock();
     double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+    */
 
     if (!empty(rnaAligns))
     {
@@ -505,11 +513,11 @@ int main (int argc, char const ** argv)
 
 
 
-
+/*
 // Print elapsed time
     _VV(options, "\nTime difference chrono = " << std::chrono::duration_cast<std::chrono::seconds>(endChrono - beginChrono).count()); //std::chrono::microseconds
     _VV(options, "\nTime difference = " << elapsed_secs);
-
+*/
     return 0;
 }
 

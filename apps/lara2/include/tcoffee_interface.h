@@ -260,7 +260,7 @@ void computeTCoffeWeightsAllInter(tcoffeePair & tcPair, TOption const & options,
     }
     else
     {
-        _VV(options, " passed from SEQALIGNONLY mode");
+        _VVV(options, " passed from SEQALIGNONLY mode");
         computeTCoffeWeightsSeqAlignOnly(tcPair, options, rna1, rna2, rnaAlign);
     }
 }
@@ -305,7 +305,7 @@ void computeTCoffeWeightsFixedInter(tcoffeePair & tcPair, TOption const & option
     }
     else
     {
-        _VV(options, " passed from SEQALIGNONLY mode");
+        _VVV(options, " passed from SEQALIGNONLY mode");
         computeTCoffeWeightsSeqAlignOnly(tcPair, options, rna1, rna2, rnaAlign);
     }
 }
@@ -318,18 +318,18 @@ void computeTCoffeWeightsMethodSel(tcoffeePair & tcPair, TOption const & options
                          TRecord const & rna2, TRnaAlign & rnaAlign)
 {
     if (options.tcoffeLibMode == PROPORTIONAL) {
-        _VV(options, " passed from PROPORTIONAL mode");
+        _VVV(options, " passed from PROPORTIONAL mode");
         computeTCoffeWeightsProportional(tcPair, options, rna1, rna2, rnaAlign);
     } else if (options.tcoffeLibMode == SWITCH) {
-        _VV(options, " passed from SWITCH mode");
+        _VVV(options, " passed from SWITCH mode");
         computeTCoffeWeightsSwitch(tcPair, options, rna1, rna2, rnaAlign);
     } else if (options.tcoffeLibMode == ALLINTER) {
 //                std::cout << i << " seq1 " << rnaAligns[i].idBppSeqH << " seq2 " << rnaAligns[i].idBppSeqV << std::endl;
-        _VV(options, " passed from ALLINTER mode");
+        _VVV(options, " passed from ALLINTER mode");
         computeTCoffeWeightsAllInter(tcPair, options, rna1, rna2, rnaAlign);
     } else if (options.tcoffeLibMode == FIXEDINTER) {
 //                std::cout << i << " seq1 " << rnaAligns[i].idBppSeqH << " seq2 " << rnaAligns[i].idBppSeqV << std::endl;
-        _VV(options, " passed from FIXEDINTER mode");
+        _VVV(options, " passed from FIXEDINTER mode");
         computeTCoffeWeightsFixedInter(tcPair, options, rna1, rna2, rnaAlign);
     } else {
         std::cout << "Select one of the available modes to compute the T-COFFE library" << std::endl;

@@ -133,12 +133,6 @@ int main (int argc, char const ** argv)
     SEQAN_ASSERT_EQ(length(setH), length(rnaAligns));
     _VV(options, "Number of pairwise alignments to be computed: " << length(rnaAligns));
 
-    /*
-    // timer start
-    std::clock_t begin = std::clock();
-    std::chrono::steady_clock::time_point beginChrono = std::chrono::steady_clock::now();
-    */
-
     // A StringSet of seqan alignments is created
     StringSet<TAlign> alignsSimd;
     createSeqanAlignments(alignsSimd, setH, setV);
@@ -175,10 +169,6 @@ int main (int argc, char const ** argv)
         ali.structScore.lamb = & ali.lamb;
     }
 
-    double mwmtime = 0.0;
-    double lemtime = 0.0;
-    double boutime = 0.0;
-
     // START FIRST ITERATION
     //#pragma omp parallel for num_threads(options.threads)
     for (unsigned i = 0; i < length(alignsSimd); ++i)
@@ -201,7 +191,7 @@ int main (int argc, char const ** argv)
             rnaAligns[i].lowerBound = rnaAligns[i].lowerLemonBound.mwmPrimal;
             // rnaAligns[i].slm = rnaAligns[i].slm - (rnaAligns[i].lowerLemonBound.mwmCardinality * 2);
             _VV(options, "Computed maximum weighted matching using the LEMON library.");
-            _VV(options, "Lower / upper bound = " << rnaAligns[i].lowerBound << " / " << rnaAligns[i].upperBound);
+            _VV(options, "Initial l/u bounds = " << rnaAligns[i].lowerBound << " / " << rnaAligns[i].upperBound);
         }
         else if (options.lowerBoundMethod == LBAPPROXMWM) // Approximation of MWM is computed to fill the LowerBound
         {
@@ -220,15 +210,12 @@ int main (int argc, char const ** argv)
             std::clock_t clstart = std::clock();
             computeBounds(rnaAligns[i], & lowerBound4Lemon);
             computeLowerAndUpperBoundScore(rnaAligns[i]);  // also calculate GU approximation
-            boutime += double(std::clock() - clstart) / CLOCKS_PER_SEC;
             clstart = std::clock();
             myLemon::computeLowerBoundScore(lowerBound4Lemon, rnaAligns[i]);
-            lemtime += double(std::clock() - clstart) / CLOCKS_PER_SEC;
 
             // Compute the MWM with the seqan greedy MWM algorithm
             clstart = std::clock();
             computeLowerBoundGreedy(lowerBound4Lemon, rnaAligns[i]);
-            mwmtime += double(std::clock() - clstart) / CLOCKS_PER_SEC;
 
             _VVV(options, "Upper bound              = " << rnaAligns[i].upperBound);
             _VVV(options, "Lower Bound lemon primal = " << rnaAligns[i].lowerLemonBound.mwmPrimal << " \tdual = "
@@ -252,7 +239,7 @@ int main (int argc, char const ** argv)
             rnaAligns[i].stepSize = rnaAligns[i].my * ((rnaAligns[i].upperBound - rnaAligns[i].lowerBound) / rnaAligns[i].slm);
         else
             rnaAligns[i].stepSize = 0;
-        _VV(options, "The step size for alignment " << i << " is " << rnaAligns[i].stepSize);
+        _VV(options, "The initial step size for alignment " << i << " is " << rnaAligns[i].stepSize);
 
         // The alignment that gives the smallest difference between upper and lower bound is saved
         saveBestAligns(rnaAligns[i], alignsSimd[i], resultsSimd[i], -1);
@@ -262,8 +249,8 @@ int main (int argc, char const ** argv)
             // alignment is finished
             eraseV[i] = true;
             checkEraseV = true;
-            _VV(options, "Computation for alignment " << i << " stops and the bestAlignMinBounds is returned. "
-                "upper bound = " << rnaAligns[i].upperBound << " lower bound = " << rnaAligns[i].lowerBound);
+            _VV(options, "Computation for alignment " << i << " stops in iteration 0 and the bestAlignMinBounds "
+                                                      << "is returned.");
         }
         else
         {
@@ -276,17 +263,17 @@ int main (int argc, char const ** argv)
     // Create the alignment data structure that will host the alignments with small difference between bounds
     // Move all finished alignments to goldRnaAligns, such that they are not further processed
     TRnaAlignVect goldRnaAligns;
-    if (checkEraseV && eraseV.size() > 0)
+    if (checkEraseV)
     {
-        for (std::size_t i = eraseV.size() - 1; i >= 0; --i)
+        for (std::size_t i = eraseV.size(); i > 0; --i)
         {
-            if (eraseV[i])
+            if (eraseV[i - 1])
             {
-                goldRnaAligns.push_back(rnaAligns[i]);
-                rnaAligns.erase(rnaAligns.begin() + i);
-                erase(alignsSimd, i);
-                erase(resultsSimd, i);
-                eraseV.erase(eraseV.begin() + i);
+                goldRnaAligns.push_back(rnaAligns[i - 1]);
+                rnaAligns.erase(rnaAligns.begin() + i - 1);
+                erase(alignsSimd, i - 1);
+                erase(resultsSimd, i - 1);
+                eraseV.erase(eraseV.begin() + i - 1);
             }
         }
     }
@@ -318,6 +305,7 @@ int main (int argc, char const ** argv)
             // The MWM is computed to fill the LowerBound
             if (options.lowerBoundMethod == LBLEMONMWM)
             {
+                std::pair<double, double> old_bounds{rnaAligns[i].lowerBound, rnaAligns[i].upperBound};
                 TMapVect lowerBound4Lemon;
                 lowerBound4Lemon.resize(rnaAligns[i].maskIndex);
                 computeBounds(rnaAligns[i], & lowerBound4Lemon);
@@ -325,7 +313,8 @@ int main (int argc, char const ** argv)
                 myLemon::computeLowerBoundScore(lowerBound4Lemon, rnaAligns[i]);
                 rnaAligns[i].lowerBound = rnaAligns[i].lowerLemonBound.mwmPrimal;
                 // rnaAligns[i].slm = rnaAligns[i].slm - (rnaAligns[i].lowerLemonBound.mwmCardinality * 2);
-                _VV(options, "Lower / upper bound = " << rnaAligns[i].lowerBound << " / " << rnaAligns[i].upperBound);
+                if (old_bounds.first != rnaAligns[i].lowerBound || old_bounds.second != rnaAligns[i].upperBound)
+                    _VV(options, "new l/u bounds: " << rnaAligns[i].lowerBound << " / " << rnaAligns[i].upperBound);
             }
             else if (options.lowerBoundMethod == LBAPPROXMWM) // Approximation of MWM is computed to fill the LowerBound
             {
@@ -344,15 +333,12 @@ int main (int argc, char const ** argv)
                 std::clock_t clstart = std::clock();
                 computeBounds(rnaAligns[i], & lowerBound4Lemon);
                 computeLowerAndUpperBoundScore(rnaAligns[i]);  // also calculate GU approximation
-                boutime += double(std::clock() - clstart) / CLOCKS_PER_SEC;
                 clstart = std::clock();
                 myLemon::computeLowerBoundScore(lowerBound4Lemon, rnaAligns[i]);
-                lemtime += double(std::clock() - clstart) / CLOCKS_PER_SEC;
 
                 // Compute the MWM with the seqan greedy MWM algorithm
                 clstart = std::clock();
                 computeLowerBoundGreedy(lowerBound4Lemon, rnaAligns[i]);
-                mwmtime += double(std::clock() - clstart) / CLOCKS_PER_SEC;
 
                 _VVV(options, "Upper bound              = " << rnaAligns[i].upperBound);
                 _VVV(options, "Lower Bound lemon primal = " << rnaAligns[i].lowerLemonBound.mwmPrimal << " \tdual = "
@@ -370,96 +356,75 @@ int main (int argc, char const ** argv)
 
                 computeLowerBoundGreedy(lowerBound4Lemon, rnaAligns[i]);
                 rnaAligns[i].lowerBound = rnaAligns[i].lowerGreedyBound;
-//                rnaAligns[i].slm = rnaAligns[i].slm - (rnaAligns[i].lowerLemonBound.mwmCardinality * 2);
+                // rnaAligns[i].slm = rnaAligns[i].slm - (rnaAligns[i].lowerLemonBound.mwmCardinality * 2);
             }
-
-            //  Compute the step size for the Lambda update
-            double stepSize;
-            if(rnaAligns[i].slm > 0)
-                stepSize = rnaAligns[i].my * ((rnaAligns[i].upperBound - rnaAligns[i].lowerBound) / rnaAligns[i].slm);
-            else
-                stepSize = 0;
 
             if ((rnaAligns[i].upperBound - rnaAligns[i].lowerBound < options.epsilon))
             {
                 // alignment is finished
                 eraseV[i] = true;
                 checkEraseV = true;
-                _VV(options, "Computation for alignment " << i << " stops and the bestAlignMinBounds is returned. "
-                    "upper bound = " << rnaAligns[i].upperBound << " lower bound = " << rnaAligns[i].lowerBound);
+                _VV(options, "Computation for alignment " << i << " stops in iteration "
+                                                          << iter << " and the bestAlignMinBounds is returned.");
             }
             else
             {
+                // save previous step size
+                double const prev_stepSize = rnaAligns[i].stepSize;
+
+                //  Compute the step size for the Lambda update
+                if (rnaAligns[i].slm > 0)
+                    rnaAligns[i].stepSize = rnaAligns[i].my * ((rnaAligns[i].upperBound - rnaAligns[i].lowerBound) / rnaAligns[i].slm);
+                else
+                    rnaAligns[i].stepSize = 0;
+
                 // there was nothing going on in the last couple of iterations, half rnaAligns[i].my therefore
-                if (rnaAligns[i].nonDecreasingIterations == options.nonDecreasingIterations)
+                if (rnaAligns[i].nonDecreasingIterations >= options.nonDecreasingIterations)
                 {
-                    rnaAligns[i].my = rnaAligns[i].my/2; //TODO check if there is the necessity to multiply or reset
-                    // this value in case of decreasing stepsize (an opposite mechanism or a my reset should be designed for this purpose)
+                    // this value in case of decreasing stepsize
+                    // (an opposite mechanism or a my reset should be designed for this purpose)
+                    rnaAligns[i].my /= 2; //TODO check if there is the necessity to multiply or reset
+                    rnaAligns[i].nonDecreasingIterations = 0u;
+                    _VV(options, "Previous iterations had no improvement. Set MY parameter to " << rnaAligns[i].my);
                 }
 
                 //  Check the number of non decreasing iterations
-                if(rnaAligns[i].stepSize < stepSize)
+                if (prev_stepSize < rnaAligns[i].stepSize)
                 {
                     ++rnaAligns[i].nonDecreasingIterations;
                 }
                 else
                 {
-                    rnaAligns[i].nonDecreasingIterations = 0u; //TODO evaluate if the reset of this value is the right strategy with respect to the decremental solution
+                    //TODO evaluate if the reset of this value is the right strategy wrt. the decremental solution
+                    rnaAligns[i].nonDecreasingIterations = 0u;
                 }
 
-                // Assign the new stepSize to for the Lambda update
-                rnaAligns[i].stepSize = stepSize;
-
-                _VVV(options, "\nThe step size to be used for Lambda for alignment " << i << " in iteration" << iter << " is " << rnaAligns[i].stepSize);
+                if (prev_stepSize != rnaAligns[i].stepSize)
+                    _VV(options, "The new step size for alignment " << i << " is " << rnaAligns[i].stepSize);
 
                 updateLambda(rnaAligns[i]);
             }
-            // The alignemnt that give the smallest difference between up and low bound should be saved
             saveBestAligns(rnaAligns[i], alignsSimd[i], resultsSimd[i], iter);
-//            saveBestAlignMinBound(rnaAligns[i], alignsSimd[i], resultsSimd[i], iter);
-        }
-        if (false && (iter == 12 || iter == 13 || iter == 14 ||iter == 99 || iter == 499))
-        {
-            printRnaStructAlign(rnaAligns[0], iter);
-
-            //--------------------
-            std::cerr << iter << "\talign row1: " << length(row(rnaAligns[0].forMinBound.bestAlign, 0)) << " ";
-            for (auto c : row(rnaAligns[0].forMinBound.bestAlign, 0))
-                std::cerr << c;
-            std::cerr << "\tscore = " << resultsSimd[0] << std::endl << "\talign row2: " << length(row(rnaAligns[0].forMinBound.bestAlign, 1)) << " ";
-            for (auto c : row(rnaAligns[0].forMinBound.bestAlign, 1))
-                std::cerr << c;
-            std::cerr << std::endl;
-            //--------------------
         }
 
         if (checkEraseV)
         {
-            for (int i = eraseV.size() - 1; i >= 0; --i)
+            for (std::size_t i = eraseV.size(); i > 0; --i)
             {
-                if(eraseV[i])
+                if (eraseV[i - 1])
                 {
-                    goldRnaAligns.push_back(rnaAligns[i]);
-                    rnaAligns.erase(rnaAligns.begin() + i);
-                    erase(alignsSimd, i);
-                    erase(resultsSimd, i);
-                    eraseV.erase(eraseV.begin() + i);
+                    goldRnaAligns.push_back(rnaAligns[i - 1]);
+                    rnaAligns.erase(rnaAligns.begin() + i - 1);
+                    erase(alignsSimd, i - 1);
+                    erase(resultsSimd, i - 1);
+                    eraseV.erase(eraseV.begin() + i - 1);
                 }
             }
         }
-        //if (options.verbose > 0) std::cerr << "|";
-
+        if (options.verbose == 1) std::cerr << "|";
     }
-    if (options.verbose > 0) std::cerr << std::endl;
-    _VVV(options, "map computation time = " << boutime << "\nlemon MWM time       = " << lemtime
-                                           << "\ngreedy MWM time      = " << mwmtime);
 
-    /*
-    // timer stop
-    std::chrono::steady_clock::time_point endChrono= std::chrono::steady_clock::now();
-    std::clock_t end = std::clock();
-    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-    */
+    if (options.verbose > 0) std::cerr << std::endl;
 
     if (!empty(rnaAligns))
     {
@@ -473,20 +438,11 @@ int main (int argc, char const ** argv)
         plotOutput(options, goldRnaAligns);
     }
 
-    rnaAligns.insert( rnaAligns.end(), goldRnaAligns.begin(), goldRnaAligns.end() );
+    rnaAligns.insert(rnaAligns.end(), goldRnaAligns.begin(), goldRnaAligns.end());
 
-    if(rnaAligns.size() > 0) // This is a multiple alignment an the T-Coffee library must be printed
+    if(!empty(rnaAligns)) // This is a multiple alignment an the T-Coffee library must be printed
     {
         createTCoffeeLib(options, filecontents1, filecontents2, rnaAligns);
     }
-
-
-
-/*
-// Print elapsed time
-    _VV(options, "\nTime difference chrono = " << std::chrono::duration_cast<std::chrono::seconds>(endChrono - beginChrono).count()); //std::chrono::microseconds
-    _VV(options, "\nTime difference = " << elapsed_secs);
-*/
     return 0;
 }
-

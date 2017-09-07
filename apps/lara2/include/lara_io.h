@@ -106,6 +106,7 @@ void plotOutput(TOption const & options, TRnaAlignVect & rnaAligns)
 {
     for (unsigned i = 0; i < length(rnaAligns); ++i)
     {
+        /*
         _VV(options, "******* For Minimum Stepsize *******" << std::endl);
 
         _VV(options, "Alignment of sequences " << rnaAligns[i].idBppSeqH << ":" << rnaAligns[i].idBppSeqV);
@@ -113,22 +114,19 @@ void plotOutput(TOption const & options, TRnaAlignVect & rnaAligns)
         _VV(options, "Best alignment based on the Min Bounds is " << rnaAligns[i].forMinBound.bestAlignScore << "\n" <<  rnaAligns[i].forMinBound.bestAlign);
         _VV(options, "Best Lower bound is " << rnaAligns[i].forMinBound.lowerBound);
         _VV(options, "Best Upper bound is " << rnaAligns[i].forMinBound.upperBound);
-        _VV(options, "Minumum step size is " << rnaAligns[i].forMinBound.stepSizeBound);
-        _VV(options, "UpperBoundVect can be plotted " );
+        _VV(options, "Minimum step size is " << rnaAligns[i].forMinBound.stepSizeBound);
 
         _VV(options, "The step size to be used for Lambda at last iteration is " << rnaAligns[i].stepSize << "\n");
-
+*/
         _VV(options, "+++++++ For Maximum Alignment Score +++++++" << std::endl);
-
         _VV(options, "Alignment of sequences " << rnaAligns[i].idBppSeqH << ":" << rnaAligns[i].idBppSeqV);
         _VV(options, "Iteration where MinStepSize has been found " << rnaAligns[i].forScore.it);
-        _VV(options, "Best alignment based on the Score is " << rnaAligns[i].forScore.bestAlignScore << "\n" <<  rnaAligns[i].forScore.bestAlign);
         _VV(options, "Best Lower bound is " << rnaAligns[i].forScore.lowerBound);
         _VV(options, "Best Upper bound is " << rnaAligns[i].forScore.upperBound);
-        _VV(options, "Minumum step size is " << rnaAligns[i].forScore.stepSizeBound);
-        _VV(options, "UpperBoundVect can be plotted ");
-
+        _VV(options, "Minimum step size is " << rnaAligns[i].forScore.stepSizeBound);
         _VV(options, "The step size to be used for Lambda at last iteration is " << rnaAligns[i].stepSize << "\n");
+        _VV(options, "Best alignment based on the Score is " << rnaAligns[i].forScore.bestAlignScore << "\n"
+                                                             << rnaAligns[i].forScore.bestAlign);
     }
 }
 

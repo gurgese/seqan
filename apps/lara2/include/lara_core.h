@@ -54,27 +54,9 @@ using namespace seqan;
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// Function saveBestAlign()
-// ----------------------------------------------------------------------------
-
-/*
-//template <typename TOption, typename TAlign, typename TScoreValue, typename TRnaAlign>
-void saveBestAlign(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore)
-{
-    if (rnaAlign.forScore.bestAlignScore < alignScore)
-    {
-//        rnaAlign.forScore.it = -1;
-        rnaAlign.forScore.bestAlign = align;
-        rnaAlign.forScore.bestAlignScore = alignScore;
-    }
-};
-*/
-
-// ----------------------------------------------------------------------------
 // Function maskCreator()
 // ----------------------------------------------------------------------------
 
-//template <typename TOption, typename TAlign, typename TScoreValue, typename TRnaAlign>
 void maskCreator(TRnaAlign & rnaAlign, TAlign const & align)
 {
     unsigned row0Begin = clippedBeginPosition(row(align, 0));
@@ -132,6 +114,7 @@ void computeUpperBoundScore(TRnaAlign & rnaAlign)
             if (rnaAlign.upperBoundVect[i].seq1Index !=
                 rnaAlign.upperBoundVect[rnaAlign.upperBoundVect[i].seq2IndexPairLine].seq1IndexPairLine)
             {
+                // the edges are not paired
                 ++rnaAlign.slm;
             }
         }
@@ -407,6 +390,23 @@ void computeLowerBoundGreedy(TMapVect & interactions, TRnaAlign & rnaAlign)
     rnaAlign.lowerGreedyBound = maximumWeightedMatchingGreedy<5>(graph);
 };
 
+// ----------------------------------------------------------------------------
+// Function saveBestAlign()
+// ----------------------------------------------------------------------------
+
+/*
+//template <typename TOption, typename TAlign, typename TScoreValue, typename TRnaAlign>
+void saveBestAlign(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore)
+{
+    if (rnaAlign.forScore.bestAlignScore < alignScore)
+    {
+//        rnaAlign.forScore.it = -1;
+        rnaAlign.forScore.bestAlign = align;
+        rnaAlign.forScore.bestAlignScore = alignScore;
+    }
+};
+*/
+
 void saveBestAlignMinBound(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore, unsigned index)
 {
 //    if ((rnaAlign.upperBound - rnaAlign.lowerBound) < (rnaAlign.upperMinBound - rnaAlign.lowerMinBound))
@@ -426,7 +426,7 @@ void saveBestAlignMinBound(TRnaAlign & rnaAlign, TAlign const & align, TScoreVal
 void saveBestAlignScore(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore, int index)
 {
 //    if ((rnaAlign.upperBound - rnaAlign.lowerBound) < (rnaAlign.upperMinBound - rnaAlign.lowerMinBound))
-    if( rnaAlign.forScore.bestAlignScore < alignScore)  //TODO check if this < is expensive
+    if (rnaAlign.forScore.bestAlignScore < alignScore)
     {
         rnaAlign.forScore.it = index; //to be used for the best lower bound
         rnaAlign.forScore.lowerBound = rnaAlign.lowerBound;
@@ -473,7 +473,9 @@ void updateLambda(TRnaAlign & rnaAlign) {
 // Save the maximum interaction weight to be used for the computation of profit of a line
             if (lambWeight.maxProbScoreLine < ub.maxProbScoreLine)
             {
-                std::cerr << "CHANGE " << i << ": " << lambWeight.seq1IndexPairLine << "," << lambWeight.seq2IndexPairLine << "->" << ub.seq1IndexPairLine << "," << ub.seq2IndexPairLine << " \t" << lambWeight.maxProbScoreLine << "->" << ub.maxProbScoreLine << std::endl;
+                std::cerr << "lambda[" << i << "] changes: " << lambWeight.seq1IndexPairLine << ","
+                          << lambWeight.seq2IndexPairLine << "->" << ub.seq1IndexPairLine << ","
+                          << ub.seq2IndexPairLine << " \tnew value = " << ub.maxProbScoreLine << std::endl;
                 lambWeight.maxProbScoreLine = ub.maxProbScoreLine;
                 lambWeight.seq1IndexPairLine = ub.seq1IndexPairLine;
                 lambWeight.seq2IndexPairLine = ub.seq2IndexPairLine;

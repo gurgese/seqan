@@ -210,16 +210,18 @@ inline void _fillVectors (RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect::ite
     {
         appendValue(setH, it1->sequence);
         appendValue(setV, it2->sequence);
-        alignInfo->bppGraphH = it1->bppMatrGraphs[alignInfo->idBppSeqH];
-        alignInfo->bppGraphV = it2->bppMatrGraphs[alignInfo->idBppSeqV];
+        alignInfo->bppGraphH = front(it1->bppMatrGraphs);
+        alignInfo->bppGraphV = front(it2->bppMatrGraphs);
     }
     else
     {
         appendValue(setH, it2->sequence);
         appendValue(setV, it1->sequence);
-        alignInfo->bppGraphH = it2->bppMatrGraphs[alignInfo->idBppSeqH];
-        alignInfo->bppGraphV = it1->bppMatrGraphs[alignInfo->idBppSeqV];
+        alignInfo->bppGraphH = front(it2->bppMatrGraphs);
+        alignInfo->bppGraphV = front(it1->bppMatrGraphs);
     }
+    SEQAN_ASSERT_EQ(length(back(setH)), numVertices(alignInfo->bppGraphH.inter));
+    SEQAN_ASSERT_EQ(length(back(setV)), numVertices(alignInfo->bppGraphV.inter));
     ++alignInfo;
 }
 

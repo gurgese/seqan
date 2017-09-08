@@ -410,8 +410,9 @@ void saveBestAlign(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue align
 void saveBestAlignMinBound(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore, unsigned index)
 {
 //    if ((rnaAlign.upperBound - rnaAlign.lowerBound) < (rnaAlign.upperMinBound - rnaAlign.lowerMinBound))
-    if( rnaAlign.stepSize <= rnaAlign.forMinBound.stepSizeBound)  //TODO check if this <= is expensive
+    if( rnaAlign.stepSize < rnaAlign.forMinBound.stepSizeBound)  //TODO check if this <= is expensive
     {
+        std::cerr << "update best min bound" << std::endl;
         rnaAlign.forMinBound.it = index; //to be used for the best lower bound
         rnaAlign.forMinBound.lowerBound = rnaAlign.lowerBound;
         rnaAlign.forMinBound.upperBound = rnaAlign.upperBound;
@@ -428,6 +429,7 @@ void saveBestAlignScore(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue 
 //    if ((rnaAlign.upperBound - rnaAlign.lowerBound) < (rnaAlign.upperMinBound - rnaAlign.lowerMinBound))
     if (rnaAlign.forScore.bestAlignScore < alignScore)
     {
+        std::cerr << "update best score" << std::endl;
         rnaAlign.forScore.it = index; //to be used for the best lower bound
         rnaAlign.forScore.lowerBound = rnaAlign.lowerBound;
         rnaAlign.forScore.upperBound = rnaAlign.upperBound;

@@ -183,7 +183,7 @@ struct Options
             laraGapExtend(-5.0),
             sequenceScale(1.0),
             rsaGapPenalty(3.0),
-            structureScoring(RIBOSUM),
+            structureScoring(LOGARITHMIC),
             fixedStructWeight(8.0),
             scalingFactor(1.0),
             tcoffeeLocation("t_coffee/t_coffee_5.05"),

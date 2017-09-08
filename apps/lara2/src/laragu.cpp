@@ -200,21 +200,18 @@ int main (int argc, char const ** argv)
         }
         else if (options.lowerBoundMethod == LBMWMTEST) // Function used to test the aproximation of MWM is computed to fill the LowerBound
         {
-//  In this branch three different methods are available for the computation: 1) the MWM approx, 2) the lemon MWM, 3) the seqan MWM <to be implemented>
-//  The approximation is used while the other structures are computed
-//  Define the datastructure that will be passed to the lemon::MWM function to compute the full lowerBound
+            //  In this branch three different methods are available for the computation: 1) the MWM approx, 2) the lemon MWM, 3) the seqan MWM <to be implemented>
+            //  The approximation is used while the other structures are computed
+            //  Define the datastructure that will be passed to the lemon::MWM function to compute the full lowerBound
 
             // Compute the MWM with the Lemon library
             TMapVect lowerBound4Lemon;
             lowerBound4Lemon.resize(rnaAligns[i].maskIndex);
-            std::clock_t clstart = std::clock();
             computeBounds(rnaAligns[i], & lowerBound4Lemon);
             computeLowerAndUpperBoundScore(rnaAligns[i]);  // also calculate GU approximation
-            clstart = std::clock();
             myLemon::computeLowerBoundScore(lowerBound4Lemon, rnaAligns[i]);
 
             // Compute the MWM with the seqan greedy MWM algorithm
-            clstart = std::clock();
             computeLowerBoundGreedy(lowerBound4Lemon, rnaAligns[i]);
 
             _VVV(options, "Upper bound              = " << rnaAligns[i].upperBound);
@@ -323,21 +320,18 @@ int main (int argc, char const ** argv)
             }
             else if (options.lowerBoundMethod == LBMWMTEST) // Function used to test the aproximation of MWM is computed to fill the LowerBound
             {
-//  In this branch three different methods are available for the computation: 1) the MWM approx, 2) the lemon MWM, 3) the seqan MWM <to be implemented>
-//  The approximation is used while the other structures are computed
-//  Define the datastructure that will be passed to the lemon::MWM function to compute the full lowerBound
+                //  In this branch three different methods are available for the computation: 1) the MWM approx, 2) the lemon MWM, 3) the seqan MWM <to be implemented>
+                //  The approximation is used while the other structures are computed
+                //  Define the datastructure that will be passed to the lemon::MWM function to compute the full lowerBound
 
                 // Compute the MWM with the Lemon library
                 TMapVect lowerBound4Lemon;
                 lowerBound4Lemon.resize(rnaAligns[i].maskIndex);
-                std::clock_t clstart = std::clock();
                 computeBounds(rnaAligns[i], & lowerBound4Lemon);
                 computeLowerAndUpperBoundScore(rnaAligns[i]);  // also calculate GU approximation
-                clstart = std::clock();
                 myLemon::computeLowerBoundScore(lowerBound4Lemon, rnaAligns[i]);
 
                 // Compute the MWM with the seqan greedy MWM algorithm
-                clstart = std::clock();
                 computeLowerBoundGreedy(lowerBound4Lemon, rnaAligns[i]);
 
                 _VVV(options, "Upper bound              = " << rnaAligns[i].upperBound);

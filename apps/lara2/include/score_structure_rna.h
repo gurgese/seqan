@@ -116,29 +116,14 @@ struct SequenceEntryForScore<Score<TValue, RnaStructureScore<TScoreMatrix, TLamb
 // ============================================================================
 
 // --------------------------------------------------------------------------
-// Function invertSeqForSize()                           [RnaStructure Score]
-// --------------------------------------------------------------------------
-// it is convenient to create the map lists on the longer sequence in order to reduce the length of the list
-template <typename TSequence>
-void invertSeqForSize(TSequence & seq1, TSequence & seq2)
-{
-	TSequence tmp;
-	if (length(seq1) < length(seq2))
-	{
-		tmp = seq1;
-		seq1 = seq2;
-		seq2 = tmp;
-	}
-}
-
-// --------------------------------------------------------------------------
 // Function fillUpdateMapline()                          [RnaStructure Score]
 // --------------------------------------------------------------------------
 //TODO to be tested deeply
-template <typename TAlign, typename TMapLine, typename TSequence, typename TValue>
+/*template <typename TAlign, typename TMapLine, typename TSequence, typename TValue>
 void fillUpdateMapline(TMapLine & mapline, TAlign const & align, TSequence const & seq1, TValue const & factor)
 //FIXME the sequence is used to pass the sequence type only
 {
+	std::cerr << "function fillUpdateMapline\n";
 	TValue struct_score = 0.1 * factor; // this score must be updated including structural score
 
     seqan::Gaps<TSequence> row0 = row(align, 0);
@@ -178,7 +163,7 @@ void fillUpdateMapline(TMapLine & mapline, TAlign const & align, TSequence const
         }
 	}
 }
-
+*/
 //template <typename TScore>
 //void showScoringMatrix(TScore sSchemeRna)
 //{
@@ -197,6 +182,7 @@ inline ConsensusScoreSequenceEntry<TSequence>
 sequenceEntryForScore(Score<TScoreValue, RnaStructureScore<TScoreMatrix, TLambVect> > const & /*sScheme*/,
                       TSequence const & seq, TPosition pos)
 {
+	std::cerr << "function sequenceEntryForScore\n";
 //	std::cout <<"ConsensusScoreSequenceEntry<TSequence>(seq, pos) "<< ConsensusScoreSequenceEntry<TSequence>(seq, pos)
 //	std::cout << " seq " << seq << " pos " << pos << " sequenceEntryForScore " << std::endl;
     return ConsensusScoreSequenceEntry<TSequence>(seq, pos);
@@ -213,6 +199,7 @@ scoreGapExtendHorizontal(
         ConsensusScoreSequenceEntry<TSeq1> const & entry1,
         ConsensusScoreSequenceEntry<TSeq2> const & entry2)
 {
+	std::cerr << "function scoreGapExtendHorizontal\n";
 //	unsigned posit=position(entry1);
 //	if ((int)position(entry1) == 0)
 //	std::cout << "entry1._seq[entry1._pos] = "<< (*entry1._seq)[posit] << " entry1._pos = " << posit << "  ||  ";
@@ -235,6 +222,7 @@ scoreGapOpenHorizontal(
         ConsensusScoreSequenceEntry<TSeq1> const & entry1,
         ConsensusScoreSequenceEntry<TSeq2> const & entry2)
 {
+	std::cerr << "function scoreGapOpenHorizontal\n";
 //	return scoreGapOpenHorizontal(me.score_matrix, (unsigned)ordValue(entry1._seq[0][entry1._pos]), (unsigned)ordValue(entry2._seq[0][entry2._pos]));
 	return scoreGapOpenHorizontal(me.score_matrix, (*entry1._seq)[position(entry1)] ,
                                   (*entry2._seq)[position(entry2)]);
@@ -251,6 +239,7 @@ scoreGapOpenVertical(
         ConsensusScoreSequenceEntry<TSeq1> const & /*entry1*/,
         ConsensusScoreSequenceEntry<TSeq2> const & /*entry2*/)
 {
+	std::cerr << "function scoreGapOpenVertical\n";
 //	return scoreGapOpenVertical(me.score_matrix, entry1._seq[0][entry1.pos], entry2._seq[0][entry2.pos]);
 	return scoreGapOpenVertical(me.score_matrix, Nothing(), Nothing());
 }
@@ -266,6 +255,7 @@ scoreGapExtendVertical(
         ConsensusScoreSequenceEntry<TSeq1> const & /*entry1*/,
         ConsensusScoreSequenceEntry<TSeq2> const & /*entry2*/)
 {
+	std::cerr << "function scoreGapExtendVertical\n";
 //	return scoreGapExtendVertical(me.score_matrix, entry1._seq[0][entry1.pos], entry2._seq[0][entry2.pos]);
 	return scoreGapExtendVertical(me.score_matrix, Nothing(), Nothing());
 }
@@ -282,6 +272,7 @@ score(Score<TValue, RnaStructureScore<TScoreMatrix, TLambVect> >  const & me,
       ConsensusScoreSequenceEntry<TSeq1> const & entry1,
       ConsensusScoreSequenceEntry<TSeq2> const & entry2)
 {
+	std::cerr << "function score\n";
 	/*
 	if (me.getMapLineValue(position(entry1),position(entry2)) != 0)
     {

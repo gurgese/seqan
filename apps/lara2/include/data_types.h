@@ -91,9 +91,6 @@ enum LaraMwmMethod
     LBLINEARTIMEMWM
 };
 
-// Value to be used to copare the difference between the upper and the lower bound difference
-double const EPSILON = 0.0001;
-
 //Values used for T-Coffee lib preparation
 int const TCOFFSET = 500;
 int const TCMULT = 10000;
@@ -129,7 +126,7 @@ struct boundStruct
 {
     // String with size seq2
     unsigned seq1Index;
-    TScoreValue maxProbScoreLine;
+    double maxProbScoreLine;
     unsigned seq1IndexPairLine;
     unsigned seq2IndexPairLine;
 };
@@ -138,8 +135,7 @@ struct boundStruct
 typedef seqan::String<boundStruct > TBound;
 
 typedef seqan::Graph<seqan::Undirected<double> > TLowerBoundGraph;
-//TODO if the Lemon library is used after the tests this graph structure should be chosen as lemon graph in order to
-// avoid the copy of the graph
+//TODO if the Lemon library is used this graph structure should be chosen as lemon graph in order to avoid the copy of the graph
 
 struct lowerBoundLemonStruct
 {
@@ -154,8 +150,8 @@ typedef lowerBoundLemonStruct TlowerLemonBound;
 // lambda value for subgradient optimization, initialized with 0
 struct lambWeightStruct
 {
-    TScoreValue step;               // actual value of lambda
-    TScoreValue maxProbScoreLine;
+    double step;               // actual value of lambda
+    double maxProbScoreLine;
     unsigned seq1IndexPairLine;
     unsigned seq2IndexPairLine;
 };
@@ -170,20 +166,18 @@ struct lambStruct
 //! Lambda Vector
 typedef seqan::String<lambStruct> TLambVect;
 
-typedef seqan::Score<double, seqan::ScoreMatrix<seqan::Rna5, TRibosum> > TScoreMatrixRib;
-typedef seqan::Score<TScoreValue, RnaStructureScore<TScoreMatrix, TLambVect> > TScoringSchemeStruct;
+typedef seqan::Score<double, RnaStructureScore<TScoreMatrix, TLambVect> > TScoringSchemeStruct;
 
 struct bestAlign
 {
     TAlign bestAlign;
-    TScoreValue bestAlignScore{std::numeric_limits<TScoreValue>::lowest()};
+    double bestAlignScore{std::numeric_limits<double>::lowest()};
     int it; //to be used for the best lower bound
     double lowerBound{};
     double upperBound{};
     double stepSizeBound{std::numeric_limits<TScoreValue>::max()};
     TBound upperBoundVect;
     seqan::String<std::pair <unsigned, unsigned> > mask;
-    unsigned maskIndex;
 };
 typedef bestAlign TBestAlign;
 
@@ -200,8 +194,7 @@ struct RnaStructAlign
 //    TAlign bestAlign;
 //    TScoreValue bestAlignScore{std::numeric_limits<TScoreValue>::lowest()};
 // Mask that represents the matches from the computed alignment
-    seqan::String<std::pair <unsigned, unsigned> > mask;
-    unsigned maskIndex;
+    seqan::String<std::pair<unsigned, unsigned> > mask;
 
 // Lower bound fields
     double lowerBound{};

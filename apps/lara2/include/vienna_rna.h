@@ -112,7 +112,7 @@ void computeBppMatrix(RnaRecord & rnaRecord, double thrBppm, bool logStructureSc
                 minProb = pl1[i].p;
         }
          */
-        double const minProb = 0.003;
+        double const minProb = 0.003; // taken from LISA > Lara
         std::cerr << "logScale";
         for (unsigned i = 0; i < size; ++i)
         {

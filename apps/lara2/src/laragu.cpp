@@ -113,7 +113,7 @@ int main (int argc, char const ** argv)
     _readRnaInputFile(filecontents2, options.inFileRef, options);
 
     _VV(options, "Read " << length(filecontents1.records) << " and "
-                        << length(filecontents2.records) << " records from input files.");
+                         << length(filecontents2.records) << " records from input files.");
 
     // Add the weight interaction edges vector map in the data structure using Vienna package
     bppInteractionGraphBuild(filecontents1.records, options);
@@ -139,9 +139,11 @@ int main (int argc, char const ** argv)
 
     // first non-structural alignment is computed
     String<TScoreValue> resultsSimd;
+    _VV(options, "Start first alignment...")
     firstSimdAlignsGlobalLocal(resultsSimd, alignsSimd, options);
     SEQAN_ASSERT_EQ(length(alignsSimd), length(rnaAligns));
-    _VV(options, "initial non-structural alignment:\n" << alignsSimd[0]);
+    SEQAN_ASSERT_EQ(length(alignsSimd), length(resultsSimd));
+    _VV(options, "\ninitial non-structural alignment (score " << resultsSimd[0] << "):\n" << alignsSimd[0]);
 
     // bitvector that expresses whether an alignment is finished (i.e. bound difference is very small)
     std::vector<bool> eraseV;
@@ -152,16 +154,18 @@ int main (int argc, char const ** argv)
     {
         // apply scaling of the score matrix, according to run time parameter ssc
         ali.structScore.score_matrix = options.laraScoreMatrix;
+        /*
         ali.structScore.score_matrix.data_gap_extend /= options.sequenceScale;
         ali.structScore.score_matrix.data_gap_open   /= options.sequenceScale;
         for (unsigned j = 0; j < length(options.laraScoreMatrix.data_tab[j]); ++j)
             ali.structScore.score_matrix.data_tab[j] /= options.sequenceScale;
+        */
 
         // initialize memory for the fields of the alignment property data structure
         std::size_t const max_seq_size = std::max(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter));
         std::size_t const min_seq_size = std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter));
         resize(ali.lamb, max_seq_size);           // length of longer sequence
-        resize(ali.mask, min_seq_size);           // length of shorter sequence
+        reserve(ali.mask, min_seq_size);           // length of shorter sequence
         resize(ali.upperBoundVect, min_seq_size); // length of shorter sequence
         ali.my = options.my;
 
@@ -174,8 +178,8 @@ int main (int argc, char const ** argv)
     for (unsigned i = 0; i < length(alignsSimd); ++i)
     {
         // create mask of current alignment to be used for the upper/lower bound computation and the lambda update
-        maskCreator(rnaAligns[i], alignsSimd[i]);
-        std::cerr << "Created mask " << rnaAligns[i].maskIndex << ":";
+        createMask(rnaAligns[i], alignsSimd[i]);
+        std::cerr << "Created mask:";
         for (auto & mask_pair : rnaAligns[i].mask)
             std::cerr << " (" << mask_pair.first << "," << mask_pair.second << ")";
         std::cerr << std::endl;
@@ -184,9 +188,9 @@ int main (int argc, char const ** argv)
         {
             // data structure that will be passed to the lemon::MWM function to compute the full lowerBound
             TMapVect lowerBound4Lemon;
-            lowerBound4Lemon.resize(rnaAligns[i].maskIndex);
+            lowerBound4Lemon.resize(length(rnaAligns[i].mask));
             computeBounds(rnaAligns[i], & lowerBound4Lemon);  // upperBoundVect receives seq indices of best pairing
-            computeUpperBoundScore(rnaAligns[i]);
+            computeUpperBoundScore(rnaAligns[i]); // upperBound = sum of all probability lines
             myLemon::computeLowerBoundScore(lowerBound4Lemon, rnaAligns[i]);
             rnaAligns[i].lowerBound = rnaAligns[i].lowerLemonBound.mwmPrimal;
             // rnaAligns[i].slm = rnaAligns[i].slm - (rnaAligns[i].lowerLemonBound.mwmCardinality * 2);
@@ -206,7 +210,7 @@ int main (int argc, char const ** argv)
 
             // Compute the MWM with the Lemon library
             TMapVect lowerBound4Lemon;
-            lowerBound4Lemon.resize(rnaAligns[i].maskIndex);
+            lowerBound4Lemon.resize(length(rnaAligns[i].mask));
             computeBounds(rnaAligns[i], & lowerBound4Lemon);
             computeLowerAndUpperBoundScore(rnaAligns[i]);  // also calculate GU approximation
             myLemon::computeLowerBoundScore(lowerBound4Lemon, rnaAligns[i]);
@@ -224,7 +228,7 @@ int main (int argc, char const ** argv)
         else if(options.lowerBoundMethod == LBLINEARTIMEMWM) // using greedy algorithm
         {
             TMapVect lowerBound4Lemon;
-            lowerBound4Lemon.resize(rnaAligns[i].maskIndex);
+            lowerBound4Lemon.resize(length(rnaAligns[i].mask));
             computeBounds(rnaAligns[i], & lowerBound4Lemon);
             computeUpperBoundScore(rnaAligns[i]);
             computeLowerBoundGreedy(lowerBound4Lemon, rnaAligns[i]);
@@ -304,7 +308,7 @@ int main (int argc, char const ** argv)
             {
                 std::pair<double, double> old_bounds{rnaAligns[i].lowerBound, rnaAligns[i].upperBound};
                 TMapVect lowerBound4Lemon;
-                lowerBound4Lemon.resize(rnaAligns[i].maskIndex);
+                lowerBound4Lemon.resize(length(rnaAligns[i].mask));
                 computeBounds(rnaAligns[i], & lowerBound4Lemon);
                 computeUpperBoundScore(rnaAligns[i]);
                 myLemon::computeLowerBoundScore(lowerBound4Lemon, rnaAligns[i]);
@@ -326,7 +330,7 @@ int main (int argc, char const ** argv)
 
                 // Compute the MWM with the Lemon library
                 TMapVect lowerBound4Lemon;
-                lowerBound4Lemon.resize(rnaAligns[i].maskIndex);
+                lowerBound4Lemon.resize(length(rnaAligns[i].mask));
                 computeBounds(rnaAligns[i], & lowerBound4Lemon);
                 computeLowerAndUpperBoundScore(rnaAligns[i]);  // also calculate GU approximation
                 myLemon::computeLowerBoundScore(lowerBound4Lemon, rnaAligns[i]);
@@ -344,7 +348,7 @@ int main (int argc, char const ** argv)
             else if(options.lowerBoundMethod == LBLINEARTIMEMWM) // using greedy algorithm
             {
                 TMapVect lowerBound4Lemon;
-                lowerBound4Lemon.resize(rnaAligns[i].maskIndex);
+                lowerBound4Lemon.resize(length(rnaAligns[i].mask));
                 computeBounds(rnaAligns[i], & lowerBound4Lemon);
                 computeUpperBoundScore(rnaAligns[i]);
 

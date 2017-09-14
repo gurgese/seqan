@@ -104,7 +104,7 @@ void computeTCoffeWeightsProportional(tcoffeePair & tcPair, SEQAN_UNUSED TOption
 //    std::cout << rnaAlign.forMinBound.bestAlign;
 //    std::cout << rnaAlign.forMinBound.bestAlignScore * options.sequenceScale << std::endl;
     tcoffeeW tcW;
-    for(int i =  rnaAlign.forMinBound.maskIndex - 1; i >= 0 ; --i)
+    for (int i = length(rnaAlign.forMinBound.mask) - 1; i >= 0 ; --i)
     {
         if(length(rna1.sequence) >= length(rna2.sequence))
         {
@@ -139,7 +139,7 @@ void computeTCoffeWeightsSwitch(tcoffeePair & tcPair, SEQAN_UNUSED TOption const
 //    std::cout << rnaAlign.forMinBound.bestAlign;
 //    std::cout << rnaAlign.forMinBound.bestAlignScore * options.sequenceScale << std::endl;
     tcoffeeW tcW;
-    for(int i =  rnaAlign.forMinBound.maskIndex - 1; i >= 0 ; --i)
+    for(int i =  length(rnaAlign.forMinBound.mask) - 1; i >= 0 ; --i)
     {
         if(length(rna1.sequence) >= length(rna2.sequence))
         {
@@ -174,7 +174,7 @@ void computeTCoffeWeightsSeqAlignOnly(tcoffeePair & tcPair, SEQAN_UNUSED TOption
 //    std::cout << rnaAlign.forMinBound.bestAlign;
 //    std::cout << rnaAlign.forMinBound.bestAlignScore * options.sequenceScale << std::endl;
     tcoffeeW tcW;
-    for(int i =  rnaAlign.forMinBound.maskIndex - 1; i >= 0 ; --i)
+    for(int i =  length(rnaAlign.forMinBound.mask) - 1; i >= 0 ; --i)
     {
         if(length(rna1.sequence) >= length(rna2.sequence))
         {
@@ -230,7 +230,7 @@ void computeTCoffeWeightsAllInter(tcoffeePair & tcPair, TOption const & options,
         String<bool> flagVectH, flagVectV;
         createInteractionFlags(flagVectH, rnaAlign.bppGraphH);
         createInteractionFlags(flagVectV, rnaAlign.bppGraphV);
-        for (int i = rnaAlign.forMinBound.maskIndex - 1; i >= 0; --i)
+        for (int i = length(rnaAlign.forMinBound.mask) - 1; i >= 0; --i)
         {
             if(length(rna1.sequence) >= length(rna2.sequence))
             {
@@ -280,7 +280,7 @@ void computeTCoffeWeightsFixedInter(tcoffeePair & tcPair, TOption const & option
         String<bool> flagVectH, flagVectV;
         createInteractionFlags(flagVectH, rna1.fixedGraphs[0]);
         createInteractionFlags(flagVectV, rna2.fixedGraphs[0]);
-        for (int i = rnaAlign.forMinBound.maskIndex - 1; i >= 0; --i)
+        for (int i = length(rnaAlign.forMinBound.mask) - 1; i >= 0; --i)
         {
             if(length(rna1.sequence) >= length(rna2.sequence))
             {

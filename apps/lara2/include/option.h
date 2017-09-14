@@ -173,7 +173,7 @@ struct Options
             iterations(500),
             nonDecreasingIterations(50u),
             lowerBoundMethod(LBLEMONMWM),
-            epsilon(EPSILON),
+            epsilon(0.0001),
             my(1.0),
             laraScoreMatrixName(""), //laraScoreMatrixName("RIBOSUM65"),
             generatorGapOpen(6.0),

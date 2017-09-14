@@ -100,11 +100,13 @@ template <typename TResultsSimd, typename TAlignsSimd, typename TOptions>
 void firstSimdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & alignsSimd, TOptions const & options)
 {
     TScoreMatrix laraScoreMatrix = options.laraScoreMatrix;
-    for(unsigned j = 0; j < length(laraScoreMatrix.data_tab[j]); ++j)
+    std::cerr << "score matrix (" << length(laraScoreMatrix.data_tab) << "):";
+    for(unsigned j = 0; j < length(laraScoreMatrix.data_tab); ++j)
     {
-        laraScoreMatrix.data_tab[j] = laraScoreMatrix.data_tab[j] / options.sequenceScale;
-//TODO sequenceScale can be substituted from a runtime computed parameter that consider the identity of the sequences or other aspects
+//        laraScoreMatrix.data_tab[j] = laraScoreMatrix.data_tab[j] / options.sequenceScale;
+        std::cerr << " " << laraScoreMatrix.data_tab[j];
     }
+    std::cerr << "  gap open " << laraScoreMatrix.data_gap_open << "  extend " << laraScoreMatrix.data_gap_extend << std::endl;
     if (!options.globalLocal)  //TODO implement the global-unconstrained alignment using the parameters in the options
     {
         if (options.affineLinearDgs == 0)
@@ -205,21 +207,10 @@ void createSeqanAlignments(StringSet<TAlign> & alignments, RnaSeqSet const & set
 inline void _fillVectors (RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect::iterator & alignInfo,
                           TRnaVect::iterator const & it1, TRnaVect::iterator const & it2)
 {
-    // in this way the alignment map structure will be always created with the maximum size
-    if (length(it1->sequence) > length(it2->sequence))
-    {
-        appendValue(setH, it1->sequence);
-        appendValue(setV, it2->sequence);
-        alignInfo->bppGraphH = front(it1->bppMatrGraphs);
-        alignInfo->bppGraphV = front(it2->bppMatrGraphs);
-    }
-    else
-    {
-        appendValue(setH, it2->sequence);
-        appendValue(setV, it1->sequence);
-        alignInfo->bppGraphH = front(it2->bppMatrGraphs);
-        alignInfo->bppGraphV = front(it1->bppMatrGraphs);
-    }
+    appendValue(setH, it1->sequence);
+    appendValue(setV, it2->sequence);
+    alignInfo->bppGraphH = front(it1->bppMatrGraphs);
+    alignInfo->bppGraphV = front(it2->bppMatrGraphs);
     SEQAN_ASSERT_EQ(length(back(setH)), numVertices(alignInfo->bppGraphH.inter));
     SEQAN_ASSERT_EQ(length(back(setV)), numVertices(alignInfo->bppGraphV.inter));
     ++alignInfo;

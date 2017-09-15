@@ -145,11 +145,11 @@ void fillBound(TBound & BoundVect, TRnaAlign const & rnaAlign, unsigned x, unsig
 // Function computeBounds() version that make use of the lemon MWM
 // ----------------------------------------------------------------------------
 
-void computeBounds(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
+void computeBounds(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon) // upper bound computation
 {
     Graph<Undirected<double> > & graph1 = rnaAlign.bppGraphH.inter;
     Graph<Undirected<double> > & graph2 = rnaAlign.bppGraphV.inter;
-    TScoreValue edgesProb, halfEdgesProb;
+    // TScoreValue edgesProb, halfEdgesProb;
 
     //  Clear the maxProbScoreLine of the upper bound
     for (std::size_t idx = 0; idx < length(rnaAlign.upperBoundVect); ++idx)
@@ -159,13 +159,37 @@ void computeBounds(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
 
     for (unsigned i = 0; i < length(rnaAlign.mask) - 1; ++i)
     {
+        std::pair<unsigned, unsigned> line = rnaAlign.mask[i];
         //String<unsigned> adjVect1;
         // get all interacting positions for current mask[i]
         //getVertexAdjacencyVector(adjVect1, graph1, rnaAlign.mask[i].first);
         //for (unsigned j = 0; j < length(adjVect1) && adjVect1[j] >= rnaAlign.mask[i].first; ++j)
 
-        for (RnaAdjacencyIterator adj_it1(graph1, rnaAlign.mask[i].first); !atEnd(adj_it1); goNext(adj_it1))
+        for (RnaAdjacencyIterator adj_it1(graph1, line.first); !atEnd(adj_it1); goNext(adj_it1))
         {
+            double edgeWeight1 = cargo(findEdge(graph1, line.first, value(adj_it1)));
+            for (RnaAdjacencyIterator adj_it2(graph2, line.second); !atEnd(adj_it2); goNext(adj_it2))
+            {
+                double edgeWeight = edgeWeight1 + cargo(findEdge(graph2, line.second, value(adj_it2)));
+                if (lowerBound4Lemon != NULL)
+                    (*lowerBound4Lemon)[value(adj_it1)][value(adj_it2)] = edgeWeight;
+
+                std::cerr << "Interaction match: " << line.first << " - " << line.second
+                          << " | " << value(adj_it1) << " - " << value(adj_it2) << "\tprob = "
+                          << edgeWeight1 << " + " << edgeWeight-edgeWeight1 << "\n";
+
+                if (rnaAlign.upperBoundVect[line.second].maxProbScoreLine < edgeWeight / 2.0)
+                {
+                    //fillBound(rnaAlign.upperBoundVect, rnaAlign, i, w, halfEdgesProb);
+                    rnaAlign.upperBoundVect[line.second].maxProbScoreLine = edgeWeight / 2.0;
+                    rnaAlign.upperBoundVect[line.second].seq1Index = line.first;
+                    rnaAlign.upperBoundVect[line.second].seq1IndexPairLine = value(adj_it1);
+                    rnaAlign.upperBoundVect[line.second].seq2IndexPairLine = value(adj_it2);
+                    std::cerr << "updated\n";
+                }
+            }
+
+/*
             if (value(adj_it1) < rnaAlign.mask[i].first) //TODO Are values of adj_it sorted? Then move cond. to loop
                 continue; // detect interactions only to the right
 
@@ -208,8 +232,8 @@ void computeBounds(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
                         }
                     }
                 }
-
             }
+            */
 
         }
     }

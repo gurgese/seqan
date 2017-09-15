@@ -166,7 +166,7 @@ int main (int argc, char const ** argv)
         std::size_t const min_seq_size = std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter));
         resize(ali.lamb, max_seq_size);           // length of longer sequence
         reserve(ali.mask, min_seq_size);           // length of shorter sequence
-        resize(ali.upperBoundVect, min_seq_size); // length of shorter sequence
+        resize(ali.upperBoundVect, numVertices(ali.bppGraphV.inter));
         ali.my = options.my;
 
         // set pointer to lambda vector
@@ -188,7 +188,7 @@ int main (int argc, char const ** argv)
         {
             // data structure that will be passed to the lemon::MWM function to compute the full lowerBound
             TMapVect lowerBound4Lemon;
-            lowerBound4Lemon.resize(length(rnaAligns[i].mask));
+            lowerBound4Lemon.resize(numVertices(rnaAligns[i].bppGraphH.inter));
             computeBounds(rnaAligns[i], & lowerBound4Lemon);  // upperBoundVect receives seq indices of best pairing
             computeUpperBoundScore(rnaAligns[i]); // upperBound = sum of all probability lines
             myLemon::computeLowerBoundScore(lowerBound4Lemon, rnaAligns[i]);

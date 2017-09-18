@@ -153,13 +153,12 @@ int main (int argc, char const ** argv)
     for (TRnaAlign & ali : rnaAligns)
     {
         // apply scaling of the score matrix, according to run time parameter ssc
+        //TODO check if scaling is not performed again anywhere else
         ali.structScore.score_matrix = options.laraScoreMatrix;
-        /*
         ali.structScore.score_matrix.data_gap_extend /= options.sequenceScale;
         ali.structScore.score_matrix.data_gap_open   /= options.sequenceScale;
         for (unsigned j = 0; j < length(options.laraScoreMatrix.data_tab[j]); ++j)
             ali.structScore.score_matrix.data_tab[j] /= options.sequenceScale;
-        */
 
         // initialize memory for the fields of the alignment property data structure
         std::size_t const max_seq_size = std::max(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter));

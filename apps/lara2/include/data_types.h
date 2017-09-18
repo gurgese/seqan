@@ -234,6 +234,7 @@ struct RnaStructAlign
 typedef RnaStructAlign TRnaAlign;
 typedef std::vector<TRnaAlign> TRnaAlignVect;
 
+// REMOVE THIS AFTER DEBUGGING
 void printRnaStructAlign(TRnaAlign & a, unsigned i)
 {
     std::cerr << i << "\tLambda Vector\n";

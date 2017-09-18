@@ -123,6 +123,7 @@ struct Options
     TScoreMatrix laraScoreMatrix;
 //    TScoringSchemeRib laraScoreMatrixRib;
 // Gap open and extend costs for generating the alignment edges
+    //TODO remove generator... options: they are not used at all
     double generatorGapOpen;
     double generatorGapExtend;
     double generatorSuboptimality; // FIXME what means this parameter? (Parameter for the generation of alignment edges. The higher the value of 'generatorsuboptimality', the more alignment edges are created.)

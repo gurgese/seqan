@@ -299,6 +299,8 @@ int main (int argc, char const ** argv)
         simdAlignsGlobalLocal(resultsSimd, alignsSimd, rnaAligns, options);
         checkEraseV = false;
 
+        _VV(options, "\nalignment in iteration " << iter + 1 << " (score " << resultsSimd[0] << "):\n" << alignsSimd[0]);
+
         //#pragma omp parallel for num_threads(options.threads)
         for (unsigned i = 0; i < length(alignsSimd); ++i)
         {
@@ -363,7 +365,7 @@ int main (int argc, char const ** argv)
                 eraseV[i] = true;
                 checkEraseV = true;
                 _VV(options, "Computation for alignment " << i << " stops in iteration "
-                                                          << iter << " and the bestAlignMinBounds is returned.");
+                                                          << iter + 1 << " and the bestAlignMinBounds is returned.");
             }
             else
             {

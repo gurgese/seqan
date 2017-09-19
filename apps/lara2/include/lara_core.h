@@ -62,6 +62,8 @@ void createMask(TRnaAlign & rnaAlign, TAlign const & align)
     Row<TAlign>::Type row0 = row(align, 0);
     Row<TAlign>::Type row1 = row(align, 1);
 
+    clear(rnaAlign.mask);
+
     for (std::size_t column = 0u; column < length(row0); ++column)
     {
         if (!isGap(row0, column) && !isGap(row1, column))
@@ -82,14 +84,17 @@ void computeUpperBoundScore(TRnaAlign & rnaAlign)
         if (rnaAlign.upperBoundVect[i].maxProbScoreLine > 0)
         {
             sum += rnaAlign.upperBoundVect[i].maxProbScoreLine;
+            std::cerr << "  " << rnaAlign.upperBoundVect[i].maxProbScoreLine;
             if (rnaAlign.upperBoundVect[i].seq1Index !=
                 rnaAlign.upperBoundVect[rnaAlign.upperBoundVect[i].seq2IndexPairLine].seq1IndexPairLine)
             {
                 // the edges are not paired
                 ++rnaAlign.slm;
+                std::cerr << "*";
             }
         }
     }
+    std::cerr << std::endl;
     rnaAlign.upperBound = sum;
 };
 

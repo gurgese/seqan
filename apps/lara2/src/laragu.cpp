@@ -302,6 +302,7 @@ int main (int argc, char const ** argv)
         //#pragma omp parallel for num_threads(options.threads)
         for (unsigned i = 0; i < length(alignsSimd); ++i)
         {
+            createMask(rnaAligns[i], alignsSimd[i]);
             // The MWM is computed to fill the LowerBound
             if (options.lowerBoundMethod == LBLEMONMWM)
             {

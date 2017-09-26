@@ -124,9 +124,10 @@ struct Options
 //    TScoringSchemeRib laraScoreMatrixRib;
 // Gap open and extend costs for generating the alignment edges
     //TODO remove generator... options: they are not used at all
-    double generatorGapOpen;
-    double generatorGapExtend;
-    double generatorSuboptimality; // FIXME what means this parameter? (Parameter for the generation of alignment edges. The higher the value of 'generatorsuboptimality', the more alignment edges are created.)
+    //double generatorGapOpen;
+    //double generatorGapExtend;
+    //double generatorSuboptimality;
+    // FIXME what means this parameter? (Parameter for the generation of alignment edges. The higher the value of 'generatorsuboptimality', the more alignment edges are created.)
 // Gap open and extend costs for generating the alignment edges
     double laraGapOpen;
     double laraGapExtend;
@@ -177,9 +178,9 @@ struct Options
             epsilon(0.0001),
             my(1.0),
             laraScoreMatrixName(""), //laraScoreMatrixName("RIBOSUM65"),
-            generatorGapOpen(6.0),
-            generatorGapExtend(2.0),
-            generatorSuboptimality(40),
+            // generatorGapOpen(6.0),
+            // generatorGapExtend(2.0),
+            // generatorSuboptimality(40),
             laraGapOpen(-12.0),
             laraGapExtend(-5.0),
             sequenceScale(1.0),
@@ -258,15 +259,15 @@ void setupArgumentParser(ArgumentParser & parser, TOption const & /* options */)
                                      ArgParseArgument::DOUBLE, "DOUBLE"));
     addOption(parser, ArgParseOption("lsm","laraScoreMatrixName", "scoring matrix name that should be used for scoring "
             "alignment edges in the actual problem", ArgParseOption::STRING));
-    addOption(parser, ArgParseOption("ggo", "generatorGapOpen",
-                                     "Gap open costs for generating the alignment edges.",
-                                     ArgParseArgument::DOUBLE, "DOUBLE"));
-    addOption(parser, ArgParseOption("gge", "generatorGapExtend",
-                                     "Gap extend costs for generating the alignment edges.",
-                                     ArgParseArgument::DOUBLE, "DOUBLE"));
-    addOption(parser, ArgParseOption("gso", "generatorSuboptimality",
-                                     "suboptimality costs for generating the alignment edges.",
-                                     ArgParseArgument::DOUBLE, "DOUBLE"));
+    // addOption(parser, ArgParseOption("ggo", "generatorGapOpen",
+    //                                  "Gap open costs for generating the alignment edges.",
+    //                                  ArgParseArgument::DOUBLE, "DOUBLE"));
+    // addOption(parser, ArgParseOption("gge", "generatorGapExtend",
+    //                                  "Gap extend costs for generating the alignment edges.",
+    //                                  ArgParseArgument::DOUBLE, "DOUBLE"));
+    // addOption(parser, ArgParseOption("gso", "generatorSuboptimality",
+    //                                  "suboptimality costs for generating the alignment edges.",
+    //                                  ArgParseArgument::DOUBLE, "DOUBLE"));
     addOption(parser, ArgParseOption("lgo", "laraGapOpen",
                                      "Gap open costs for generating the alignment edges",
                                      ArgParseArgument::DOUBLE, "DOUBLE"));
@@ -425,9 +426,9 @@ ArgumentParser::ParseResult parse(TOption & options, ArgumentParser & parser, in
     getOptionValue(options.epsilon, parser, "epsilon");
     getOptionValue(options.my, parser, "my");
     getOptionValue(options.laraScoreMatrixName, parser, "laraScoreMatrixName");
-    getOptionValue(options.generatorGapOpen, parser, "generatorGapOpen");
-    getOptionValue(options.generatorGapExtend, parser, "generatorGapExtend");
-    getOptionValue(options.generatorSuboptimality, parser, "generatorSuboptimality");
+    // getOptionValue(options.generatorGapOpen, parser, "generatorGapOpen");
+    // getOptionValue(options.generatorGapExtend, parser, "generatorGapExtend");
+    // getOptionValue(options.generatorSuboptimality, parser, "generatorSuboptimality");
     getOptionValue(options.laraGapOpen, parser, "laraGapOpen");
     getOptionValue(options.laraGapExtend, parser, "laraGapExtend");
     getOptionValue(options.sequenceScale, parser, "sequenceScale");

@@ -127,7 +127,7 @@ int main (int argc, char const ** argv)
     RnaSeqSet setH;
     RnaSeqSet setV;
     TRnaAlignVect rnaAligns;
-    crossproduct(setH, setV, rnaAligns, filecontents1.records, filecontents2.records);
+    crossproduct(setH, setV, rnaAligns, filecontents1.records, filecontents2.records); //TODO Smollest sequences must be placed always in setV and rnaAligns[ ].bppGraphV for using NW unbunded alignment
     SEQAN_ASSERT_EQ(length(setH), length(setV));
     SEQAN_ASSERT_EQ(length(setH), length(rnaAligns));
     _VV(options, "Number of pairwise alignments to be computed: " << length(rnaAligns));

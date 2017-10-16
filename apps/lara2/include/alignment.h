@@ -99,32 +99,34 @@ void setScoreMatrix(TOptions & options)
 template <typename TResultsSimd, typename TAlignsSimd, typename TOptions>
 void firstSimdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & alignsSimd, TOptions const & options)
 {
-    TScoreMatrix laraScoreMatrix = options.laraScoreMatrix;
-    std::cerr << "score matrix (" << length(laraScoreMatrix.data_tab) << "):";
-    for(unsigned j = 0; j < length(laraScoreMatrix.data_tab); ++j)
+    TScoreMatrix firstScoreMatrix = options.laraScoreMatrix;
+    firstScoreMatrix.data_gap_extend = options.generatorGapExtend;
+    firstScoreMatrix.data_gap_open = options.generatorGapOpen;
+    std::cerr << "score matrix (" << length(firstScoreMatrix.data_tab) << "):";
+    for(unsigned j = 0; j < length(firstScoreMatrix.data_tab); ++j)
     {
 //        laraScoreMatrix.data_tab[j] = laraScoreMatrix.data_tab[j] / options.sequenceScale;
-        std::cerr << " " << laraScoreMatrix.data_tab[j];
+        std::cerr << " " << firstScoreMatrix.data_tab[j];
     }
-    std::cerr << "  gap open " << laraScoreMatrix.data_gap_open << "  extend " << laraScoreMatrix.data_gap_extend << std::endl;
+    std::cerr << "  gap open " << firstScoreMatrix.data_gap_open << "  extend " << firstScoreMatrix.data_gap_extend << std::endl;
     if (!options.globalLocal)  //TODO implement the global-unconstrained alignment using the parameters in the options
     {
         if (options.affineLinearDgs == 0)
-            resultsSimd = globalAlignment(alignsSimd, laraScoreMatrix, AffineGaps());
+            resultsSimd = globalAlignment(alignsSimd, firstScoreMatrix, AffineGaps());
         else if (options.affineLinearDgs == 1)
-            resultsSimd = globalAlignment(alignsSimd, laraScoreMatrix, LinearGaps());
+            resultsSimd = globalAlignment(alignsSimd, firstScoreMatrix, LinearGaps());
         else
-            resultsSimd = globalAlignment(alignsSimd, laraScoreMatrix, DynamicGaps());
+            resultsSimd = globalAlignment(alignsSimd, firstScoreMatrix, DynamicGaps());
 
     }
     else
     {
         if (options.affineLinearDgs == 0)
-            resultsSimd = localAlignment(alignsSimd, laraScoreMatrix, AffineGaps());
+            resultsSimd = localAlignment(alignsSimd, firstScoreMatrix, AffineGaps());
         else if (options.affineLinearDgs == 1)
-            resultsSimd = localAlignment(alignsSimd, laraScoreMatrix, LinearGaps());
+            resultsSimd = localAlignment(alignsSimd, firstScoreMatrix, LinearGaps());
         else
-            resultsSimd = localAlignment(alignsSimd, laraScoreMatrix, DynamicGaps());
+            resultsSimd = localAlignment(alignsSimd, firstScoreMatrix, DynamicGaps());
     }
 };
 

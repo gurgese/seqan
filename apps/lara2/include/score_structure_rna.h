@@ -280,7 +280,7 @@ score(Score<TValue, RnaStructureScore<TScoreMatrix, TLambVect> >  const & me,
     // " mapLine =  " << me._mapLine[position(entry1)][position(entry2)] << std::endl; // me._mapLine[position(entry1)][position(entry2)]
 //	return score(me.score_matrix, (*entry1._seq)[position(entry1)] , (*entry2._seq)[position(entry2)]); // Normal Score using the substitutional matrix
 	return score(me.score_matrix, (*entry1._seq)[position(entry1)] ,
-                 (*entry2._seq)[position(entry2)]) + me.getMapLineValue(position(entry1), position(entry2));
+                 (*entry2._seq)[position(entry2)]) + me.getMapLineValue(position(entry1), position(entry2)); //TODO add +w_lm
 }
 
 }  // namespace seqan

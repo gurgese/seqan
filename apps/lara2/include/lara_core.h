@@ -83,7 +83,8 @@ void computeUpperBoundScore(TRnaAlign & rnaAlign)
     {
         if (rnaAlign.upperBoundVect[i].maxProbScoreLine > 0)
         {
-            sum += rnaAlign.upperBoundVect[i].maxProbScoreLine;
+
+            sum += rnaAlign.upperBoundVect[i].maxProbScoreLine * 2;
             std::cerr << "  " << rnaAlign.upperBoundVect[i].maxProbScoreLine;
             if (rnaAlign.upperBoundVect[i].seq1Index !=
                 rnaAlign.upperBoundVect[rnaAlign.upperBoundVect[i].seq2IndexPairLine].seq1IndexPairLine)
@@ -168,22 +169,23 @@ void computeBounds(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon) // upper b
                     for (std::pair<unsigned, unsigned> const & pairline : rnaAlign.mask)
                     { //TODO make this loop more efficient
                         if (pairline.first == value(adj_it1) && pairline.second == value(adj_it2))
+                        {
                             (*lowerBound4Lemon)[line.first][pairline.first] = edgeWeight;
+
+                            std::cerr << "Interaction match: " << line.first+1 << " - " << line.second+1
+                                      << " | " << value(adj_it1)+1 << " - " << value(adj_it2)+1 << "\tprob = "
+                                      << edgeWeight1 << " + " << edgeWeight-edgeWeight1 << " -> " << edgeWeight/2.0
+                                      << "\n";
+                            if (rnaAlign.upperBoundVect[line.second].maxProbScoreLine < edgeWeight / 2.0)
+                            {
+                                rnaAlign.upperBoundVect[line.second].maxProbScoreLine = edgeWeight / 2.0;
+                                rnaAlign.upperBoundVect[line.second].seq1Index = line.first;
+                                rnaAlign.upperBoundVect[line.second].seq1IndexPairLine = value(adj_it1);
+                                rnaAlign.upperBoundVect[line.second].seq2IndexPairLine = value(adj_it2);
+                                std::cerr << "updated\n";
+                            }
+                        }
                     }
-                }
-
-                std::cerr << "Interaction match: " << line.first+1 << " - " << line.second+1
-                          << " | " << value(adj_it1)+1 << " - " << value(adj_it2)+1 << "\tprob = "
-                          << edgeWeight1 << " + " << edgeWeight-edgeWeight1 << "\n";
-
-                // for upper bound do not care if interactions are closed by a line
-                if (rnaAlign.upperBoundVect[line.second].maxProbScoreLine < edgeWeight / 2.0)
-                {
-                    rnaAlign.upperBoundVect[line.second].maxProbScoreLine = edgeWeight / 2.0;
-                    rnaAlign.upperBoundVect[line.second].seq1Index = line.first;
-                    rnaAlign.upperBoundVect[line.second].seq1IndexPairLine = value(adj_it1);
-                    rnaAlign.upperBoundVect[line.second].seq2IndexPairLine = value(adj_it2);
-                    std::cerr << "updated\n";
                 }
             }
         }

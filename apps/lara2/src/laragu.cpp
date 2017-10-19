@@ -249,7 +249,7 @@ int main (int argc, char const ** argv)
             }
 
             // TODO move saveBestAligns call here?
-            if ((ali.upperBound - ali.lowerBound < options.epsilon))
+            if ((ali.upperBound - ali.lowerBound < options.epsilon) && iter != 0)
             {
                 // alignment is finished
                 eraseV[i] = true;

@@ -156,7 +156,7 @@ int main (int argc, char const ** argv)
         // initialize memory for the fields of the alignment property data structure
         resize (ali.lamb, std::max(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
         reserve(ali.mask, std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
-        resize(ali.upperBoundVect, numVertices(ali.bppGraphV.inter));
+        resize(ali.weightLineVect, numVertices(ali.bppGraphV.inter));
         ali.my = options.my;
 
         // Add struct scoring scheme pointers to each alignment cell of the alignment vector
@@ -173,13 +173,24 @@ int main (int argc, char const ** argv)
 
     _VV(options, "Start first alignment...")
     firstSimdAlignsGlobalLocal(resultsSimd, alignsSimd, options);
+    for (unsigned i = 0; i < length(alignsSimd); ++i)
+    {
+        TRnaAlign & ali = rnaAligns[i];
+        createMask(ali, alignsSimd[i]);
+        for (unsigned j = 0; j < length(ali.mask); ++j)
+        {
+            std::cout << ali.mask[j].first << " : " << ali.mask[j].second << std::endl;
+        }
+        initialiseLambda(ali);
+    }
+
 
     // ITERATIONS OF ALIGNMENT AND MWM
     for (unsigned iter = 0; iter < options.iterations && length(alignsSimd) > 0; ++iter)
     {
         checkEraseV = false;
-        if (iter != 0)
-            simdAlignsGlobalLocal(resultsSimd, alignsSimd, rnaAligns, options);
+        //if (iter != 0)
+        simdAlignsGlobalLocal(resultsSimd, alignsSimd, rnaAligns, options);
 
         _VV(options, "\nalignment in iteration " << iter << " (score " << resultsSimd[0] << "):\n" << alignsSimd[0]);
 
@@ -199,7 +210,7 @@ int main (int argc, char const ** argv)
                 std::pair<double, double> old_bounds{ali.lowerBound, ali.upperBound};
                 TMapVect lowerBound4Lemon;
                 lowerBound4Lemon.resize(numVertices(ali.bppGraphH.inter)); //TODO check this
-                computeBounds(ali, & lowerBound4Lemon); // upperBoundVect receives seq indices of best pairing
+                computeBounds(ali, & lowerBound4Lemon); // weightLineVect receives seq indices of best pairing
                 computeUpperBoundScore(ali); // upperBound = sum of all probability lines
                 myLemon::computeLowerBoundScore(lowerBound4Lemon, ali);
                 ali.lowerBound = ali.lowerLemonBound.mwmPrimal;

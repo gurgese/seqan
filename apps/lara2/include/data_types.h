@@ -122,7 +122,7 @@ typedef std::vector<TMap > TMapVect;
 typedef std::vector<seqan::RnaRecord> TRnaVect;
 typedef StringSet<Rna5String, Dependent<Generous> > RnaSeqSet;
 
-struct boundStruct
+struct weightLineStruct
 {
     // String with size seq2
     unsigned seq1Index;
@@ -132,7 +132,7 @@ struct boundStruct
 };
 
 // String with size seq2
-typedef seqan::String<boundStruct > TBound;
+typedef seqan::String<weightLineStruct > TWeightLine;
 
 typedef seqan::Graph<seqan::Undirected<double> > TLowerBoundGraph;
 //TODO if the Lemon library is used this graph structure should be chosen as lemon graph in order to avoid the copy of the graph
@@ -154,6 +154,13 @@ struct lambWeightStruct
     double maxProbScoreLine;
     unsigned seq1IndexPairLine;
     unsigned seq2IndexPairLine;
+    bool fromUBPairing;
+    lambWeightStruct() :
+            step(0),
+            maxProbScoreLine(0),
+            seq1IndexPairLine(0),
+            seq2IndexPairLine(0),
+            fromUBPairing(false){} // This flag is used for saving mates found during the upper bound update of the line weights
 };
 
 //typedef std::map<TPosition, lambWeightStruct> TMapWeight;
@@ -176,7 +183,7 @@ struct bestAlign
     double lowerBound{};
     double upperBound{};
     double stepSizeBound{std::numeric_limits<TScoreValue>::max()};
-    TBound upperBoundVect;
+    TWeightLine weightLineVect;
     seqan::String<std::pair <unsigned, unsigned> > mask;
 };
 typedef bestAlign TBestAlign;
@@ -198,7 +205,7 @@ struct RnaStructAlign
 
 // Lower bound fields
     double lowerBound{};
-//    TBound lowerBoundVect;
+//    TWeightLine lowerBoundVect;
 // This field is used to approximate the maximum weighted match If tests of this usage are positive we can cosider
 // to do not use anymore the Lemon MWM
     TLowerBoundGraph lowerBoundGraph; //graph useful for the seqan::MaximumWeightedMatch() function
@@ -207,7 +214,7 @@ struct RnaStructAlign
 
 // Upper bound fields
     double upperBound{};
-    TBound upperBoundVect; // receives interactions of MWM
+    TWeightLine weightLineVect; // receives interactions of MWM
 
 // Parameters used to compute the stepsize
     int slm{};

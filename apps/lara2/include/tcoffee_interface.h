@@ -116,9 +116,9 @@ void computeTCoffeWeightsProportional(tcoffeePair & tcPair, SEQAN_UNUSED TOption
             tcW.ntSeqV = rnaAlign.forMinBound.mask[i].first + 1;
             tcW.ntSeqH = rnaAlign.forMinBound.mask[i].second + 1;
         }
-        if(rnaAlign.forMinBound.upperBoundVect[rnaAlign.forMinBound.mask[i].second].maxProbScoreLine > 0)
+        if(rnaAlign.forMinBound.weightLineVect[rnaAlign.forMinBound.mask[i].second].maxProbScoreLine > 0)
         {
-            tcW.weight = TCOFFSET + static_cast<int>(TCMULT * rnaAlign.forMinBound.upperBoundVect[rnaAlign.forMinBound.mask[i].second].maxProbScoreLine);
+            tcW.weight = TCOFFSET + static_cast<int>(TCMULT * rnaAlign.forMinBound.weightLineVect[rnaAlign.forMinBound.mask[i].second].maxProbScoreLine);
         }
         else
         {
@@ -151,7 +151,7 @@ void computeTCoffeWeightsSwitch(tcoffeePair & tcPair, SEQAN_UNUSED TOption const
             tcW.ntSeqV = rnaAlign.forMinBound.mask[i].first + 1;
             tcW.ntSeqH = rnaAlign.forMinBound.mask[i].second + 1;
         }
-        if(rnaAlign.forMinBound.upperBoundVect[rnaAlign.forMinBound.mask[i].second].maxProbScoreLine > 0)
+        if(rnaAlign.forMinBound.weightLineVect[rnaAlign.forMinBound.mask[i].second].maxProbScoreLine > 0)
         {
             tcW.weight = TCMAX;
         }

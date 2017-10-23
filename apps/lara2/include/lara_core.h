@@ -77,16 +77,16 @@ void createMask(TRnaAlign & rnaAlign, TAlign const & align)
 
 void computeUpperBoundScore(TRnaAlign & rnaAlign)
 {
-    TScoreValue sum = 0;
+    TScoreValue upperBoundScore = 0;
     rnaAlign.slm = 0;
     for (unsigned i = 0; i < length(rnaAlign.upperBoundVect); ++i)
     {
         if (rnaAlign.upperBoundVect[i].maxProbScoreLine > 0)
         {
-            sum += rnaAlign.upperBoundVect[i].maxProbScoreLine;
+            upperBoundScore += rnaAlign.upperBoundVect[i].maxProbScoreLine;
             std::cerr << "  " << rnaAlign.upperBoundVect[i].maxProbScoreLine;
-            if (rnaAlign.upperBoundVect[i].seq1Index !=
-                rnaAlign.upperBoundVect[rnaAlign.upperBoundVect[i].seq2IndexPairLine].seq1IndexPairLine)
+            if (rnaAlign.upperBoundVect[i].seq1IndexPairLine !=
+                rnaAlign.upperBoundVect[rnaAlign.upperBoundVect[i].seq2IndexPairLine].seq1Index)
             {
                 // the edges are not paired
                 ++rnaAlign.slm;
@@ -95,7 +95,7 @@ void computeUpperBoundScore(TRnaAlign & rnaAlign)
         }
     }
     std::cerr << std::endl;
-    rnaAlign.upperBound = sum;
+    rnaAlign.upperBound = upperBoundScore;
 };
 
 // ----------------------------------------------------------------------------

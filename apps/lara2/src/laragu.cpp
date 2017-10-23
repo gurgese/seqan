@@ -201,8 +201,10 @@ int main (int argc, char const ** argv)
                 lowerBound4Lemon.resize(numVertices(ali.bppGraphH.inter)); //TODO check this
                 computeBounds(ali, & lowerBound4Lemon); // upperBoundVect receives seq indices of best pairing
                 computeUpperBoundScore(ali); // upperBound = sum of all probability lines
+                _VV(options, "upper bound: " << ali.upperBound << " + " << resultsSimd[i] << " = " << ali.upperBound + resultsSimd[i]);
+                ali.upperBound += resultsSimd[i];
                 myLemon::computeLowerBoundScore(lowerBound4Lemon, ali);
-                ali.lowerBound = ali.lowerLemonBound.mwmPrimal;
+                ali.lowerBound = ali.lowerLemonBound.mwmPrimal + resultsSimd[i];
                 // ali.slm = ali.slm - (ali.lowerLemonBound.mwmCardinality * 2);
                 _VV(options, "Computed maximum weighted matching using the LEMON library.");
                 if (old_bounds.first != ali.lowerBound || old_bounds.second != ali.upperBound)

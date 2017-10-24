@@ -134,6 +134,52 @@ void computeLowerAndUpperBoundScore(TRnaAlign & rnaAlign)
 //    std::cout << "lowerBound = " << sumL << std::endl;
 };
 
+
+void findClosedLoopAndUpdateLambda(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
+{
+    Graph<Undirected<double> > & graph1 = rnaAlign.bppGraphH.inter;
+    Graph<Undirected<double> > & graph2 = rnaAlign.bppGraphV.inter;
+    // iterate all lines that are present in the alignment
+    for (std::pair<unsigned, unsigned> const & line : rnaAlign.mask)
+    {
+        // outgoing interactions in the first sequence
+        for (RnaAdjacencyIterator adj_it1(graph1, line.first); !atEnd(adj_it1); goNext(adj_it1))
+        {
+            double edgeWeight1 = cargo(findEdge(graph1, line.first, value(adj_it1)));
+
+            // outgoing interactions in the second sequence
+            for (RnaAdjacencyIterator adj_it2(graph2, line.second); !atEnd(adj_it2); goNext(adj_it2))
+            {
+                double edgeWeight = edgeWeight1 + cargo(findEdge(graph2, line.second, value(adj_it2)));
+
+                // for lower bound the directed interactions must occur in both orientations
+                if (lowerBound4Lemon != NULL && line.first < value(adj_it1))
+                {
+                    for (std::pair<unsigned, unsigned> const & pairline : rnaAlign.mask)
+                    { //TODO make this loop more efficient
+                        if (pairline.first == value(adj_it1) && pairline.second == value(adj_it2))
+                            (*lowerBound4Lemon)[line.first][pairline.first] = edgeWeight;
+                    }
+                }
+
+                std::cerr << "Interaction match: " << line.first+1 << " - " << line.second+1
+                          << " | " << value(adj_it1)+1 << " - " << value(adj_it2)+1 << "\tprob = "
+                          << edgeWeight1 << " + " << edgeWeight-edgeWeight1 << "\n";
+
+                // for upper bound do not care if interactions are closed by a line
+                if (rnaAlign.weightLineVect[line.second].maxProbScoreLine < edgeWeight / 2.0)
+                {
+                    rnaAlign.weightLineVect[line.second].maxProbScoreLine = edgeWeight / 2.0;
+                    rnaAlign.weightLineVect[line.second].seq1Index = line.first;
+                    rnaAlign.weightLineVect[line.second].seq1IndexPairLine = value(adj_it1);
+                    rnaAlign.weightLineVect[line.second].seq2IndexPairLine = value(adj_it2);
+                    std::cerr << "updated\n";
+                }
+            }
+        }
+    }
+}
+
 // ----------------------------------------------------------------------------
 // Function computeBounds() version that make use of the lemon MWM
 // ----------------------------------------------------------------------------
@@ -248,14 +294,82 @@ void saveBestAligns(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alig
     saveBestAlignScore(rnaAlign, align, alignScore, index);
 }
 
-void initialiseLambda(TRnaAlign & rnaAlign)
+template <typename TValueScoreLine>
+void updateLambdaLine(TValueScoreLine & maxProbScoreLine, unsigned & seqIndexInter, Graph<Undirected<double> > const & graph, unsigned const & position)
 {
-    
-
-
+    for (RnaAdjacencyIterator adj_it(graph, position); !atEnd(adj_it); goNext(adj_it))
+    {
+        double edgeWeight = cargo(findEdge(graph, position, value(adj_it)));
+//        std::cout << line.first << " : " << value(adj_it1) << " \ " << edgeWeight << " - " << line.second << std::endl;
+        if(maxProbScoreLine < edgeWeight)
+        {
+            maxProbScoreLine = edgeWeight;
+            seqIndexInter = value(adj_it);
+        }
+    }
 }
 
-void updateLambda(TRnaAlign & rnaAlign)
+void switchIndex (unsigned & index1, unsigned & index2)
+{
+    unsigned tmp = index1;
+    index1 = index2;
+    index2 = tmp;
+}
+
+void initialiseLambda(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
+{
+    Graph<Undirected<double> > & graph1 = rnaAlign.bppGraphH.inter;
+    Graph<Undirected<double> > & graph2 = rnaAlign.bppGraphV.inter;
+    // iterate all lines that are present in the alignment
+    for (std::pair<unsigned, unsigned> const & line : rnaAlign.mask)
+    {
+        std::cout << degree(graph1, line.first) << " - " << degree(graph2, line.second) << std::endl;
+        // outgoing interactions in the first sequence
+        if(rnaAlign.lamb[line.first].map.count(line.second) == 0 && degree(graph1, line.first) > 0 && degree(graph2, line.second) > 0)
+        {
+            struct lambWeightStruct & lambda = rnaAlign.lamb[line.first].map[line.second];
+            
+//            std::cout << lambda.maxProbScoreLine1 << std::endl;
+            updateLambdaLine(lambda.maxProbScoreLine1, lambda.seq1IndexInter, graph1, line.first);
+            lambda.seq1IndexPairLine = line.first;
+//            std::cout << lambda.seq1IndexPairLine << " : " << lambda.seq1IndexInter << " | " << lambda.maxProbScoreLine1
+//                      << " - " << line.second << std::endl;
+
+            updateLambdaLine(lambda.maxProbScoreLine2, lambda.seq2IndexInter, graph2, line.second);
+            lambda.seq2IndexPairLine = line.second;
+//            std::cout << lambda.seq2IndexPairLine << " : " << lambda.seq2IndexInter << " | " << lambda.maxProbScoreLine2
+//                      << " - " << line.first << std::endl;
+
+
+            lambda.maxProbScoreLine = (lambda.maxProbScoreLine1 + lambda.maxProbScoreLine2) / 2;
+
+            std::cout << lambda.seq1IndexPairLine << " : " << lambda.seq2IndexPairLine << " = "
+                      << lambda.maxProbScoreLine << " | " << lambda.seq1IndexInter << " : "
+                      << lambda.seq2IndexInter << " (" << lambda.fromUBPairing << ")" << std::endl;
+
+//            std::cout << rnaAlign.lamb[line.first].map[line.second].maxProbScoreLine << std::endl;
+
+
+//            std::cout << rnaAlign.lamb[lambda.seq1IndexInter].map.count(lambda.seq1IndexPairLine) << std::endl;
+            if (saveFoundInterPair && rnaAlign.lamb[lambda.seq1IndexInter].map.count(lambda.seq1IndexPairLine) == 0)
+                // if the map is not empty means that the line have been already evaluated in a previous iteration
+            {
+                struct lambWeightStruct &lambdaPair = rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq1IndexPairLine];
+                lambdaPair = lambda;
+                switchIndex(lambdaPair.seq1IndexPairLine, lambdaPair.seq1IndexInter);
+                switchIndex(lambdaPair.seq2IndexPairLine, lambdaPair.seq2IndexInter);
+                lambdaPair.fromUBPairing = true;
+
+                std::cout << lambdaPair.seq1IndexPairLine << " : " << lambdaPair.seq2IndexPairLine << " = "
+                          << lambdaPair.maxProbScoreLine  << " | " << lambdaPair.seq1IndexInter << " : "
+                          << lambdaPair.seq2IndexInter << " (" << lambdaPair.fromUBPairing << ")" << std::endl;
+            }
+//        rnaAlign[line.first].map[line.second].maxProbScoreLine = lambWeight/2;
+        }
+    }
+}
+
+void updateLambda(TRnaAlign & rnaAlign)  // TODO REMOVE THIS FUNCTION
 {
     for (size_t i = 0; i < length(rnaAlign.weightLineVect); ++i)
     {

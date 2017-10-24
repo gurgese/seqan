@@ -41,7 +41,7 @@ To test the dbn files run the following command
 -i ./apps/lara2/demo/input.fa -ir ./apps/lara2/demo/rnafold.dbn -t 2 -v 2
 
 To test the gap open/extension that produce the desired configuration
--i ./apps/lara2/demo/input_jorg.fasta -t 1 -lbm 0 -v 2 -td ./apps/lara2/demo/tmp -iter 5  -stsc 3 -ggo -0.3 -gge 0.1
+-i ./apps/lara2/demo/input_jorg.fasta -t 1 -lbm 0 -v 2 -td ./apps/lara2/demo/tmp -iter 5  -stsc 3 -ggo -0.3 -gge -0.1
 
 
 Configuration of g++ version to be used in the INSTALL instructions

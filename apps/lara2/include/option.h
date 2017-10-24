@@ -140,6 +140,8 @@ struct Options
     double fixedStructWeight;
 // if structureScoring=SCALING then we have to give a scaling factor
     double scalingFactor;
+// if true the opposite lines found during the upper bound computation with a max score must be saved and used
+    double useOppositLineUB;
 // specify the location of T-COFFEE
     seqan::CharString tcoffeeLocation;
 // specify the method to be used to create the T-Coffe library
@@ -187,6 +189,7 @@ struct Options
             structureScoring(LOGARITHMIC),
             fixedStructWeight(8.0),
             scalingFactor(1.0),
+            useOppositLineUB(true),
             tcoffeeLocation("t_coffee/t_coffee_5.05"),
             tcoffeLibMode(SWITCH),
             splitSequence(1),
@@ -284,6 +287,8 @@ void setupArgumentParser(ArgumentParser & parser, TOption const & /* options */)
             "fixed structures", ArgParseArgument::DOUBLE, "DOUBLE"));
     addOption(parser, ArgParseOption("scal", "scalingFactor", "if structurescoring=SCALING then we have to give a "
             "scaling factor", ArgParseArgument::DOUBLE, "DOUBLE"));
+    addOption(parser, ArgParseOption("uolub", "useOppositLineUB", "if true the opposite lines found during the upper "
+            "bound computation with a max score must be saved and used", ArgParseArgument::BOOL, "BOOL"));
     addOption(parser, ArgParseOption("spseq", "splitSequence", "Define the id of the sequence that must be splitted.",
                                      ArgParseArgument::INTEGER, "INT")); // TODO fix the meaning of this parameter
     addOption(parser, ArgParseOption("ws", "windowSize", "window size specifies the length of the sliding window.",
@@ -435,6 +440,7 @@ ArgumentParser::ParseResult parse(TOption & options, ArgumentParser & parser, in
     getOptionValue(options.structureScoring, parser, "structureScoring");
     getOptionValue(options.fixedStructWeight, parser, "fixedStructWeight");
     getOptionValue(options.scalingFactor, parser, "scalingFactor");
+    getOptionValue(options.useOppositLineUB, parser, "useOppositLineUB");
     getOptionValue(options.tcoffeeLocation, parser, "tcoffeeLocation");
     getOptionValue(options.tcoffeLibMode, parser, "tcoffeLibMode");
     getOptionValue(options.splitSequence, parser, "splitSequence");

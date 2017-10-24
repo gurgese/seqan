@@ -150,16 +150,24 @@ typedef lowerBoundLemonStruct TlowerLemonBound;
 // lambda value for subgradient optimization, initialized with 0
 struct lambWeightStruct
 {
-    double step;               // actual value of lambda
+    double step;               // actual value of lambda  TODO change this name to lambda
     double maxProbScoreLine;
+    double maxProbScoreLine1;
+    double maxProbScoreLine2;
     unsigned seq1IndexPairLine;
     unsigned seq2IndexPairLine;
+    unsigned seq1IndexInter;
+    unsigned seq2IndexInter;
     bool fromUBPairing;
     lambWeightStruct() :
             step(0),
             maxProbScoreLine(0),
+            maxProbScoreLine1(0),
+            maxProbScoreLine2(0),
             seq1IndexPairLine(0),
             seq2IndexPairLine(0),
+            seq1IndexInter(0),
+            seq2IndexInter(0),
             fromUBPairing(false){} // This flag is used for saving mates found during the upper bound update of the line weights
 };
 

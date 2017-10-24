@@ -154,8 +154,10 @@ int main (int argc, char const ** argv)
             ali.structScore.score_matrix.data_tab[j] /= options.sequenceScale;
 
         // initialize memory for the fields of the alignment property data structure
-        resize (ali.lamb, std::max(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
-        reserve(ali.mask, std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
+        //resize (ali.lamb, std::max(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));  // TODO implement the maximum and minimum check before to come in this loop
+        resize (ali.lamb, numVertices(ali.bppGraphH.inter));
+        //reserve(ali.mask, std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter))); // This will destroy my info concerning the indexing
+        reserve(ali.mask, numVertices(ali.bppGraphV.inter));
         resize(ali.weightLineVect, numVertices(ali.bppGraphV.inter));
         ali.my = options.my;
 
@@ -181,8 +183,10 @@ int main (int argc, char const ** argv)
         {
             std::cout << ali.mask[j].first << " : " << ali.mask[j].second << std::endl;
         }
-        initialiseLambda(ali);
+        initialiseLambda(ali, options.useOppositLineUB);
+
     }
+    _VV(options, "\nalignment in iteration " << " (score " << resultsSimd[0] << "):\n" << alignsSimd[0]);
 
 
     // ITERATIONS OF ALIGNMENT AND MWM
@@ -204,14 +208,17 @@ int main (int argc, char const ** argv)
                 std::cerr << " (" << mask_pair.first << "," << mask_pair.second << ")";
             std::cerr << std::endl;
 
+            ali.upperBound = resultsSimd[i];
+
             // The MWM is computed to fill the LowerBound
             if (options.lowerBoundMethod == LBLEMONMWM)
             {
                 std::pair<double, double> old_bounds{ali.lowerBound, ali.upperBound};
                 TMapVect lowerBound4Lemon;
                 lowerBound4Lemon.resize(numVertices(ali.bppGraphH.inter)); //TODO check this
+                findClosedLoopAndUpdateLambda(ali, & lowerBound4Lemon); // weightLineVect receives seq indices of best pairing
                 computeBounds(ali, & lowerBound4Lemon); // weightLineVect receives seq indices of best pairing
-                computeUpperBoundScore(ali); // upperBound = sum of all probability lines
+//                computeUpperBoundScore(ali); // upperBound = sum of all probability lines
                 myLemon::computeLowerBoundScore(lowerBound4Lemon, ali);
                 ali.lowerBound = ali.lowerLemonBound.mwmPrimal;
                 // ali.slm = ali.slm - (ali.lowerLemonBound.mwmCardinality * 2);

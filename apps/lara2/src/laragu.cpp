@@ -183,7 +183,7 @@ int main (int argc, char const ** argv)
         {
             std::cout << ali.mask[j].first << " : " << ali.mask[j].second << std::endl;
         }
-        initialiseLambda(ali, options.useOppositLineUB);
+        computeLambda(ali, options.useOppositLineUB);
 
     }
     _VV(options, "\nalignment in iteration " << " (score " << resultsSimd[0] << "):\n" << alignsSimd[0]);
@@ -216,7 +216,8 @@ int main (int argc, char const ** argv)
                 std::pair<double, double> old_bounds{ali.lowerBound, ali.upperBound};
                 TMapVect lowerBound4Lemon;
                 lowerBound4Lemon.resize(numVertices(ali.bppGraphH.inter)); //TODO check this
-                findClosedLoopAndUpdateLambda(ali, & lowerBound4Lemon); // weightLineVect receives seq indices of best pairing
+                computeLowerBound(ali, & lowerBound4Lemon); 
+                return 1; // I GU check until this point
                 computeBounds(ali, & lowerBound4Lemon); // weightLineVect receives seq indices of best pairing
 //                computeUpperBoundScore(ali); // upperBound = sum of all probability lines
                 myLemon::computeLowerBoundScore(lowerBound4Lemon, ali);

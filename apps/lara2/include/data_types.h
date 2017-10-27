@@ -244,6 +244,8 @@ struct RnaStructAlign
 
 // Scoring scheme used for the structural alignment
     TScoringSchemeStruct structScore;
+
+    double sequenceScore;
 };// rnaStructAlign;
 
 typedef RnaStructAlign TRnaAlign;

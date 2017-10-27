@@ -57,18 +57,75 @@ using namespace seqan;
 // Function createMask()
 // ----------------------------------------------------------------------------
 
-void createMask(TRnaAlign & rnaAlign, TAlign const & align)
+template <typename TOptions>
+void createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & options)
 {
+    typedef typename Iterator<Gaps<TSequence, seqan::ArrayGaps> const, Standard>::Type TGapsIter;
+
     Row<TAlign>::Type row0 = row(align, 0);
     Row<TAlign>::Type row1 = row(align, 1);
 
     clear(rnaAlign.mask);
+    rnaAlign.sequenceScore = 0;
 
-    for (std::size_t column = 0u; column < length(row0); ++column)
+    // Get iterators.
+    TGapsIter it0      = begin(row0);
+    TGapsIter itEnd0   = end(row0);
+    TGapsIter it1      = begin(row1);
+    TGapsIter itEnd1   = end(row1);
+
+    // State whether we have already opened a gap.
+    bool isGapOpen0 = false, isGapOpen1 = false;
+
+    for (unsigned column = 0u; it0 != itEnd0 && it1 != itEnd1; ++it0, ++it1, ++column)
     {
-        if (!isGap(row0, column) && !isGap(row1, column))
+        // Gaps in first sequence
+        if (isGap(it0))
+        {
+            if (!isGapOpen0)
+            {
+                rnaAlign.sequenceScore += options.laraGapOpen;
+            }
+            else
+            {
+                rnaAlign.sequenceScore += options.laraGapExtend;
+            }
+            isGapOpen0 = true;
+        }
+        else
+        {
+            isGapOpen0 = false;
+        }
+
+        // Gaps in second sequence
+        if (isGap(it1))
+        {
+            if (!isGapOpen1)
+            {
+                rnaAlign.sequenceScore += options.laraGapOpen;
+            }
+            else
+            {
+                rnaAlign.sequenceScore += options.laraGapExtend;
+            }
+            isGapOpen1 = true;
+        }
+        else
+        {
+            isGapOpen1 = false;
+        }
+
+        // Match or mismatch
+        if (!isGap(it0) && !isGap(it1))
+        {
+            rnaAlign.sequenceScore += score(options.laraScoreMatrix, *it0, *it1);
+
+            // create mask entry
             appendValue(rnaAlign.mask, std::make_pair(toSourcePosition(row0, column), toSourcePosition(row1, column)));
+        }
     }
+    SEQAN_ASSERT(it0 == itEnd0);
+    SEQAN_ASSERT(it1 == itEnd1);
 }
 
 // ----------------------------------------------------------------------------
@@ -160,9 +217,8 @@ void computeLowerBound(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
                 ++rnaAlign.slm;
             }
         }
-        std::cout << "in this position we should compute the sum of the scores from the sequence nucleotide by nucleotide";
-//        score(rnaAlign.structScore.score_matrix, (*entry1._seq)[position(entry1)] , (*entry2._seq)[position(entry2)]);
     }
+    std::cerr << "The sequence score is " << rnaAlign.sequenceScore << std::endl;
 //    std::cout << rnaAlign.slm << std::endl;
 }
 

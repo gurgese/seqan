@@ -58,7 +58,7 @@ using namespace seqan;
 // ----------------------------------------------------------------------------
 
 template <typename TOptions>
-void createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & options)
+void createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & options, bool isFirstAlignment)
 {
     typedef typename Iterator<Gaps<TSequence, seqan::ArrayGaps> const, Standard>::Type TGapsIter;
 
@@ -77,6 +77,10 @@ void createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & opt
     // State whether we have already opened a gap.
     bool isGapOpen0 = false, isGapOpen1 = false;
 
+    // Gap cost
+    double const gapOpen   = isFirstAlignment ? options.generatorGapOpen   : options.laraGapOpen;
+    double const gapExtend = isFirstAlignment ? options.generatorGapExtend : options.laraGapExtend;
+
     for (unsigned column = 0u; it0 != itEnd0 && it1 != itEnd1; ++it0, ++it1, ++column)
     {
         // Gaps in first sequence
@@ -84,11 +88,11 @@ void createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & opt
         {
             if (!isGapOpen0)
             {
-                rnaAlign.sequenceScore += options.laraGapOpen;
+                rnaAlign.sequenceScore += gapOpen;
             }
             else
             {
-                rnaAlign.sequenceScore += options.laraGapExtend;
+                rnaAlign.sequenceScore += gapExtend;
             }
             isGapOpen0 = true;
         }
@@ -102,11 +106,11 @@ void createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & opt
         {
             if (!isGapOpen1)
             {
-                rnaAlign.sequenceScore += options.laraGapOpen;
+                rnaAlign.sequenceScore += gapOpen;
             }
             else
             {
-                rnaAlign.sequenceScore += options.laraGapExtend;
+                rnaAlign.sequenceScore += gapExtend;
             }
             isGapOpen1 = true;
         }
@@ -126,6 +130,8 @@ void createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & opt
     }
     SEQAN_ASSERT(it0 == itEnd0);
     SEQAN_ASSERT(it1 == itEnd1);
+
+    rnaAlign.sequenceScore /= options.sequenceScale;
 }
 
 // ----------------------------------------------------------------------------
@@ -202,11 +208,11 @@ void computeLowerBound(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
         if (rnaAlign.lamb[line.first].map.count(line.second) > 0)
         {
             lambWeightStruct &lamb = rnaAlign.lamb[line.first].map[line.second];
-            std::cout << lamb.seq1IndexPairLine << std::endl;
+            std::cerr << lamb.seq1IndexPairLine << std::endl;
             if (lamb.seq1IndexPairLine == rnaAlign.lamb[lamb.seq1IndexInter].map[lamb.seq2IndexInter].seq1IndexInter &&
                 lamb.seq2IndexPairLine == rnaAlign.lamb[lamb.seq1IndexInter].map[lamb.seq2IndexInter].seq2IndexInter &&
                 !rnaAlign.lamb[lamb.seq1IndexInter].map[lamb.seq2IndexInter].fromUBPairing) {
-//                std::cout << lamb.seq1IndexPairLine << " == "
+//                std::cerr << lamb.seq1IndexPairLine << " == "
 //                          << rnaAlign.lamb[lamb.seq1IndexInter].map[lamb.seq2IndexInter].seq1IndexInter << " && " <<
 //                          lamb.seq2IndexPairLine << " == "
 //                          << rnaAlign.lamb[lamb.seq1IndexInter].map[lamb.seq2IndexInter].seq2IndexInter << " &&" <<
@@ -219,7 +225,7 @@ void computeLowerBound(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
         }
     }
     std::cerr << "The sequence score is " << rnaAlign.sequenceScore << std::endl;
-//    std::cout << rnaAlign.slm << std::endl;
+//    std::cerr << rnaAlign.slm << std::endl;
 }
 
 // ----------------------------------------------------------------------------
@@ -367,7 +373,7 @@ void computeLambda(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
     // iterate all lines that are present in the alignment
     for (std::pair<unsigned, unsigned> const & line : rnaAlign.mask)
     {
-        std::cout << degree(graph1, line.first) << " - " << degree(graph2, line.second) << std::endl;
+        std::cerr << degree(graph1, line.first) << " - " << degree(graph2, line.second) << std::endl;
         // outgoing interactions in the first sequence
         bool proceed = false;
         if (degree(graph1, line.first) > 0 && degree(graph2, line.second) > 0)
@@ -393,7 +399,7 @@ void computeLambda(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
 //                      << " - " << line.first << std::endl;
                 lambda.maxProbScoreLine = (lambda.maxProbScoreLine1 + lambda.maxProbScoreLine2) / 2;
 
-                std::cout << lambda.seq1IndexPairLine << " : " << lambda.seq2IndexPairLine << " = "
+                std::cerr << lambda.seq1IndexPairLine << " : " << lambda.seq2IndexPairLine << " = "
                           << lambda.maxProbScoreLine << " | " << lambda.seq1IndexInter << " : "
                           << lambda.seq2IndexInter << " (" << lambda.fromUBPairing << ")" << std::endl;
                 rnaAlign.lamb[line.first].map[line.second].fromUBPairing = false;
@@ -408,7 +414,7 @@ void computeLambda(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
                     switchIndex(lambdaPair.seq2IndexPairLine, lambdaPair.seq2IndexInter);
                     lambdaPair.fromUBPairing = true;
 
-                    std::cout << lambdaPair.seq1IndexPairLine << " : " << lambdaPair.seq2IndexPairLine << " = "
+                    std::cerr << lambdaPair.seq1IndexPairLine << " : " << lambdaPair.seq2IndexPairLine << " = "
                               << lambdaPair.maxProbScoreLine << " | " << lambdaPair.seq1IndexInter << " : "
                               << lambdaPair.seq2IndexInter << " (" << lambdaPair.fromUBPairing << ")" << std::endl;
                 }

@@ -178,10 +178,10 @@ int main (int argc, char const ** argv)
     for (unsigned i = 0; i < length(alignsSimd); ++i)
     {
         TRnaAlign & ali = rnaAligns[i];
-        createMask(ali, alignsSimd[i], options);
+        createMask(ali, alignsSimd[i], options, true);
         for (unsigned j = 0; j < length(ali.mask); ++j)
         {
-            std::cout << ali.mask[j].first << " : " << ali.mask[j].second << std::endl;
+            std::cerr << ali.mask[j].first << " : " << ali.mask[j].second << std::endl;
         }
         computeLambda(ali, options.useOppositLineUB);
 
@@ -202,7 +202,7 @@ int main (int argc, char const ** argv)
         for (unsigned i = 0; i < length(alignsSimd); ++i)
         {
             TRnaAlign & ali = rnaAligns[i];
-            createMask(ali, alignsSimd[i], options);
+            createMask(ali, alignsSimd[i], options, false);
             std::cerr << "Created mask:";
             for (auto & mask_pair : ali.mask)
                 std::cerr << " (" << mask_pair.first << "," << mask_pair.second << ")";
@@ -213,19 +213,17 @@ int main (int argc, char const ** argv)
             // The MWM is computed to fill the LowerBound
             if (options.lowerBoundMethod == LBLEMONMWM)
             {
-                std::pair<double, double> old_bounds{ali.lowerBound, ali.upperBound};
                 TMapVect lowerBound4Lemon;
                 lowerBound4Lemon.resize(numVertices(ali.bppGraphH.inter)); //TODO check this
                 computeLowerBound(ali, & lowerBound4Lemon);
-                return 1; // I GU check until this point
+                //return 1; // I GU check until this point
                 computeBounds(ali, & lowerBound4Lemon); // weightLineVect receives seq indices of best pairing
 //                computeUpperBoundScore(ali); // upperBound = sum of all probability lines
                 myLemon::computeLowerBoundScore(lowerBound4Lemon, ali);
-                ali.lowerBound = ali.lowerLemonBound.mwmPrimal;
+                ali.lowerBound = ali.lowerLemonBound.mwmPrimal + ali.sequenceScore;
                 // ali.slm = ali.slm - (ali.lowerLemonBound.mwmCardinality * 2);
                 _VV(options, "Computed maximum weighted matching using the LEMON library.");
-                if (old_bounds.first != ali.lowerBound || old_bounds.second != ali.upperBound)
-                    _VV(options, "new l/u bounds: " << ali.lowerBound << " / " << ali.upperBound);
+                _VV(options, "l/u bounds: " << ali.lowerBound << " / " << ali.upperBound);
             }
             else if (options.lowerBoundMethod == LBAPPROXMWM) // Approximation of MWM is computed to fill the LowerBound
             {

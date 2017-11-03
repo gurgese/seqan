@@ -102,13 +102,10 @@ void firstSimdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & aligns
     TScoreMatrix firstScoreMatrix = options.laraScoreMatrix;
     firstScoreMatrix.data_gap_extend = options.generatorGapExtend;
     firstScoreMatrix.data_gap_open = options.generatorGapOpen;
-    std::cerr << "score matrix (" << length(firstScoreMatrix.data_tab) << "):";
-    for(unsigned j = 0; j < length(firstScoreMatrix.data_tab); ++j)
-    {
+//    for(unsigned j = 0; j < length(firstScoreMatrix.data_tab); ++j)
+//    {
 //        laraScoreMatrix.data_tab[j] = laraScoreMatrix.data_tab[j] / options.sequenceScale;
-        std::cerr << " " << firstScoreMatrix.data_tab[j];
-    }
-    std::cerr << "  gap open " << firstScoreMatrix.data_gap_open << "  extend " << firstScoreMatrix.data_gap_extend << std::endl;
+//    }
     if (!options.globalLocal)  //TODO implement the global-unconstrained alignment using the parameters in the options
     {
         if (options.affineLinearDgs == 0)

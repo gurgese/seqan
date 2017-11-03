@@ -150,7 +150,7 @@ typedef lowerBoundLemonStruct TlowerLemonBound;
 // lambda value for subgradient optimization, initialized with 0
 struct lambWeightStruct
 {
-    double step;               // actual value of lambda  TODO change this name to lambda
+    double step;               // actual value of lambda  TODO change this name to lambda // name in old Lara: dual
     double maxProbScoreLine;
     double maxProbScoreLine1;
     double maxProbScoreLine2;
@@ -188,8 +188,8 @@ struct bestAlign
     TAlign bestAlign;
     double bestAlignScore{std::numeric_limits<double>::lowest()};
     int it; //to be used for the best lower bound
-    double lowerBound{};
-    double upperBound{};
+    double lowerBound{std::numeric_limits<double>::lowest()};
+    double upperBound{std::numeric_limits<double>::max()};
     double stepSizeBound{std::numeric_limits<TScoreValue>::max()};
     TWeightLine weightLineVect;
     seqan::String<std::pair <unsigned, unsigned> > mask;
@@ -212,7 +212,7 @@ struct RnaStructAlign
     seqan::String<std::pair<unsigned, unsigned> > mask;
 
 // Lower bound fields
-    double lowerBound{};
+    double lowerBound{std::numeric_limits<double>::lowest()};
 //    TWeightLine lowerBoundVect;
 // This field is used to approximate the maximum weighted match If tests of this usage are positive we can cosider
 // to do not use anymore the Lemon MWM
@@ -221,11 +221,11 @@ struct RnaStructAlign
     double lowerGreedyBound;
 
 // Upper bound fields
-    double upperBound{};
+    double upperBound{std::numeric_limits<double>::max()};
     TWeightLine weightLineVect; // receives interactions of MWM
 
 // Parameters used to compute the stepsize
-    int slm{};
+    int slm{}; // numberOfSubgradients
     double stepSize{std::numeric_limits<TScoreValue>::max()};
     unsigned nonDecreasingIterations{};
     double my{1.0};
@@ -246,6 +246,11 @@ struct RnaStructAlign
     TScoringSchemeStruct structScore;
 
     double sequenceScore;
+
+    double currentUpperBound{std::numeric_limits<double>::max()};
+    double currentLowerBound{std::numeric_limits<double>::lowest()};
+    double bestUpperBound{std::numeric_limits<double>::max()};
+    double bestLowerBound{std::numeric_limits<double>::lowest()};
 };// rnaStructAlign;
 
 typedef RnaStructAlign TRnaAlign;

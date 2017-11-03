@@ -148,8 +148,8 @@ void computeUpperBoundScore(TRnaAlign & rnaAlign)
         {
             sum += rnaAlign.weightLineVect[i].maxProbScoreLine;
             std::cerr << "  " << rnaAlign.weightLineVect[i].maxProbScoreLine;
-            if (rnaAlign.weightLineVect[i].seq1Index !=
-                rnaAlign.weightLineVect[rnaAlign.weightLineVect[i].seq2IndexPairLine].seq1IndexPairLine)
+            if (rnaAlign.weightLineVect[i].seq1IndexPairLine !=
+                rnaAlign.weightLineVect[rnaAlign.weightLineVect[i].seq2IndexPairLine].seq1Index)
             {
                 // the edges are not paired
                 ++rnaAlign.slm;
@@ -157,7 +157,8 @@ void computeUpperBoundScore(TRnaAlign & rnaAlign)
             }
         }
     }
-    std::cerr << std::endl;
+    rnaAlign.slm *= 2;
+    std::cerr << "ub score " << sum << "\t slm = " << rnaAlign.slm << std::endl;
     rnaAlign.upperBound = sum;
 };
 
@@ -426,39 +427,37 @@ void computeLambda(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
 
 void updateLambda(TRnaAlign & rnaAlign)  // TODO REMOVE THIS FUNCTION
 {
-    for (size_t i = 0; i < length(rnaAlign.weightLineVect); ++i)
+    for (size_t seq2Index = 0; seq2Index < length(rnaAlign.weightLineVect); ++seq2Index)
     {
-        struct weightLineStruct const & ub = rnaAlign.weightLineVect[i];
+        struct weightLineStruct const & ub = rnaAlign.weightLineVect[seq2Index];
 
         if (ub.maxProbScoreLine > 0) { // skip if no interactions
             // get lambda struct of paired seq1 position
-            struct lambWeightStruct & lambWeight = rnaAlign.lamb[ub.seq1Index].map[i];
+            struct lambWeightStruct & lambWeight = rnaAlign.lamb[ub.seq1Index].map[seq2Index];
 
             // the interaction edges are not paired
-            if (ub.seq1Index != rnaAlign.weightLineVect[ub.seq2IndexPairLine].seq1IndexPairLine)
+            if (ub.seq1IndexPairLine != rnaAlign.weightLineVect[ub.seq2IndexPairLine].seq1Index)
             {
-                // if C < D add stepSize to lambda
-                if (ub.seq1Index < ub.seq1IndexPairLine)
-                {
-// TODO check if this strategy is properly working a positive score is assigned to the left-side alignments.
-// Maybe a double side strategy should be tested
-                    lambWeight.step += rnaAlign.stepSize;
-                    // Note, the default initializer is callet the fist time that set the value to 0
-                } else {
-                    lambWeight.step -= rnaAlign.stepSize;
-                    // Note, the default initializer is callet the fist time that set the value to 0
-                }
+                rnaAlign.lamb[ub.seq1Index].map[seq2Index].step -= rnaAlign.stepSize;
+                rnaAlign.lamb[ub.seq1IndexPairLine].map[ub.seq2IndexPairLine].step += rnaAlign.stepSize;
+
+                std::cerr << "lambda[" << ub.seq1Index << "," << seq2Index << "] = "
+                          << rnaAlign.lamb[ub.seq1Index].map[seq2Index].step << "\t"
+                          << "lambda[" << ub.seq1IndexPairLine << "," << ub.seq2IndexPairLine << "] = "
+                          << rnaAlign.lamb[ub.seq1IndexPairLine].map[ub.seq2IndexPairLine].step << std::endl;
             }
-// Save the maximum interaction weight to be used for the computation of profit of a line
-            if (lambWeight.maxProbScoreLine < ub.maxProbScoreLine)
-            {
-                std::cerr << "lambda[" << i << "] changes: " << lambWeight.seq1IndexPairLine << ","
-                          << lambWeight.seq2IndexPairLine << "->" << ub.seq1IndexPairLine << ","
-                          << ub.seq2IndexPairLine << " \tnew value = " << ub.maxProbScoreLine << std::endl;
-                lambWeight.maxProbScoreLine = ub.maxProbScoreLine;
-                lambWeight.seq1IndexPairLine = ub.seq1IndexPairLine;
-                lambWeight.seq2IndexPairLine = ub.seq2IndexPairLine;
-            }
+
+            // Save the maximum interaction weight to be used for the computation of profit of a line
+//            if (lambWeight.maxProbScoreLine < ub.maxProbScoreLine)
+//            {
+//                std::cerr << "lambda[" << seq2Index << "] changes: " << lambWeight.seq1IndexPairLine << ","
+//                          << lambWeight.seq2IndexPairLine << "->" << ub.seq1IndexPairLine << ","
+//                          << ub.seq2IndexPairLine << " \tnew weight = " << ub.maxProbScoreLine << " \tnew lambda = "
+//                          << lambWeight.step << std::endl;
+//                lambWeight.maxProbScoreLine = ub.maxProbScoreLine;
+//                lambWeight.seq1IndexPairLine = ub.seq1IndexPairLine;
+//                lambWeight.seq2IndexPairLine = ub.seq2IndexPairLine;
+//            }
         }
     }
 }

@@ -127,7 +127,8 @@ int main (int argc, char const ** argv)
     RnaSeqSet setH;
     RnaSeqSet setV;
     TRnaAlignVect rnaAligns;
-    crossproduct(setH, setV, rnaAligns, filecontents1.records, filecontents2.records); //TODO Smollest sequences must be placed always in setV and rnaAligns[ ].bppGraphV for using NW unbunded alignment
+    crossproduct(setH, setV, rnaAligns, filecontents1.records, filecontents2.records);
+    //TODO Smollest sequences must be placed always in setV and rnaAligns[ ].bppGraphV for using NW unbunded alignment
     SEQAN_ASSERT_EQ(length(setH), length(setV));
     SEQAN_ASSERT_EQ(length(setH), length(rnaAligns));
     _VV(options, "Number of pairwise alignments to be computed: " << length(rnaAligns));
@@ -142,11 +143,9 @@ int main (int argc, char const ** argv)
     eraseV.resize(length(rnaAligns), false);
     bool checkEraseV = false;
 
-    _VV(options, "goldAligns ready.");
     for (TRnaAlign & ali : rnaAligns)
     {
         // apply scaling of the score matrix, according to run time parameter ssc
-        //TODO check if scaling is not performed again anywhere else
         ali.structScore.score_matrix = options.laraScoreMatrix;
         ali.structScore.score_matrix.data_gap_extend /= options.sequenceScale;
         ali.structScore.score_matrix.data_gap_open   /= options.sequenceScale;
@@ -154,9 +153,11 @@ int main (int argc, char const ** argv)
             ali.structScore.score_matrix.data_tab[j] /= options.sequenceScale;
 
         // initialize memory for the fields of the alignment property data structure
-        resize (ali.lamb, std::max(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));  // TODO implement the maximum and minimum check before to come in this loop
+        resize (ali.lamb, std::max(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
+        // TODO implement the maximum and minimum check before to come in this loop
         //resize (ali.lamb, numVertices(ali.bppGraphH.inter));
-        reserve(ali.mask, std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter))); // This will destroy my info concerning the indexing
+        reserve(ali.mask, std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
+        // This will destroy my info concerning the indexing
         //reserve(ali.mask, numVertices(ali.bppGraphV.inter));
         resize(ali.weightLineVect, numVertices(ali.bppGraphV.inter));
         ali.my = options.my;
@@ -175,26 +176,26 @@ int main (int argc, char const ** argv)
 
     _VV(options, "Start first alignment...")
     firstSimdAlignsGlobalLocal(resultsSimd, alignsSimd, options);
-    for (unsigned i = 0; i < length(alignsSimd); ++i)
-    {
-        TRnaAlign & ali = rnaAligns[i];
-        createMask(ali, alignsSimd[i], options, true);
-        for (unsigned j = 0; j < length(ali.mask); ++j)
-        {
-            std::cerr << ali.mask[j].first << " : " << ali.mask[j].second << std::endl;
-        }
-        computeLambda(ali, options.useOppositLineUB);
-
-    }
-    _VV(options, "\nalignment in iteration " << " (score " << resultsSimd[0] << "):\n" << alignsSimd[0]);
+//    for (unsigned i = 0; i < length(alignsSimd); ++i)
+//    {
+//        TRnaAlign & ali = rnaAligns[i];
+//        createMask(ali, alignsSimd[i], options, true);
+//        for (unsigned j = 0; j < length(ali.mask); ++j)
+//        {
+//            std::cerr << ali.mask[j].first << " : " << ali.mask[j].second << std::endl;
+//        }
+//        computeLambda(ali, options.useOppositLineUB);
+//
+//    }
+    //_VV(options, "\nalignment in iteration " << " (score " << resultsSimd[0] << "):\n" << alignsSimd[0]);
 
 
     // ITERATIONS OF ALIGNMENT AND MWM
     for (unsigned iter = 0; iter < options.iterations && length(alignsSimd) > 0; ++iter)
     {
         checkEraseV = false;
-        //if (iter != 0)
-        simdAlignsGlobalLocal(resultsSimd, alignsSimd, rnaAligns, options);
+        if (iter != 0)
+            simdAlignsGlobalLocal(resultsSimd, alignsSimd, rnaAligns, options);
 
         _VV(options, "\nalignment in iteration " << iter << " (score " << resultsSimd[0] << "):\n" << alignsSimd[0]);
 
@@ -202,13 +203,13 @@ int main (int argc, char const ** argv)
         for (unsigned i = 0; i < length(alignsSimd); ++i)
         {
             TRnaAlign & ali = rnaAligns[i];
-            createMask(ali, alignsSimd[i], options, false);
+            createMask(ali, alignsSimd[i], options, true);
             std::cerr << "Created mask:";
             for (auto & mask_pair : ali.mask)
                 std::cerr << " (" << mask_pair.first << "," << mask_pair.second << ")";
             std::cerr << std::endl;
 
-            ali.upperBound = resultsSimd[i];
+            //ali.upperBound = resultsSimd[i];
 
             // The MWM is computed to fill the LowerBound
             if (options.lowerBoundMethod == LBLEMONMWM)
@@ -218,12 +219,19 @@ int main (int argc, char const ** argv)
                 computeLowerBound(ali, & lowerBound4Lemon);
                 //return 1; // I GU check until this point
                 computeBounds(ali, & lowerBound4Lemon); // weightLineVect receives seq indices of best pairing
-//                computeUpperBoundScore(ali); // upperBound = sum of all probability lines
+                computeUpperBoundScore(ali); // upperBound = sum of all probability lines
+
+                ali.currentUpperBound = resultsSimd[i] + ali.upperBound;
+                ali.bestUpperBound = std::min(ali.bestUpperBound, ali.currentUpperBound);
+
                 myLemon::computeLowerBoundScore(lowerBound4Lemon, ali);
                 ali.lowerBound = ali.lowerLemonBound.mwmPrimal + ali.sequenceScore;
+                ali.currentLowerBound = ali.lowerBound;
+                ali.bestLowerBound = std::max(ali.bestLowerBound, ali.currentLowerBound);
                 // ali.slm = ali.slm - (ali.lowerLemonBound.mwmCardinality * 2);
                 _VV(options, "Computed maximum weighted matching using the LEMON library.");
-                _VV(options, "l/u bounds: " << ali.lowerBound << " / " << ali.upperBound);
+                _VV(options, "l/u bounds: " << ali.currentLowerBound << " / " << ali.currentUpperBound);
+                _VV(options, "best l/u bounds: " << ali.bestLowerBound << " / " << ali.bestUpperBound);
             }
             else if (options.lowerBoundMethod == LBAPPROXMWM) // Approximation of MWM is computed to fill the LowerBound
             {
@@ -266,7 +274,7 @@ int main (int argc, char const ** argv)
             }
 
             // TODO move saveBestAligns call here?
-            if ((ali.upperBound - ali.lowerBound < options.epsilon))
+            if ((ali.bestUpperBound - ali.bestLowerBound < options.epsilon))
             {
                 // alignment is finished
                 eraseV[i] = true;
@@ -281,7 +289,7 @@ int main (int argc, char const ** argv)
 
                 //  Compute the step size for the Lambda update
                 if (ali.slm > 0)
-                    ali.stepSize = ali.my * ((ali.upperBound - ali.lowerBound) / ali.slm);
+                    ali.stepSize = ali.my * ((ali.bestUpperBound - ali.bestLowerBound) / ali.slm);
                 else
                     ali.stepSize = 0;
 

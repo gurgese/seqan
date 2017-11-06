@@ -180,11 +180,12 @@ int main (int argc, char const ** argv)
     {
         TRnaAlign & ali = rnaAligns[i];
         createMask(ali, alignsSimd[i], options);
-        for (unsigned j = 0; j < length(ali.mask); ++j)
+/*        for (unsigned j = 0; j < length(ali.mask); ++j)
         {
             std::cout << ali.mask[j].first << " : " << ali.mask[j].second << std::endl;
         }
-        computeLambda(ali, options.useOppositLineUB);
+*/
+        createNewLambdaLines(ali, options.useOppositLineUB);
 
     }
     _VV(options, "\nalignment in iteration " << " (score " << resultsSimd[0] << "):\n" << alignsSimd[0]);
@@ -205,77 +206,53 @@ int main (int argc, char const ** argv)
             TRnaAlign & ali = rnaAligns[i];
             ali.maskOld = ali.mask;
             createMask(ali, alignsSimd[i], options);
+            std::cerr << "Created mask:" << std::endl;
+
+/*            for (auto & mask_pair : ali.mask)
+//                std::cerr << " (" << mask_pair.first << "," << mask_pair.second << ")";
+*/            std::cerr << std::endl;
+
+            ali.upperBound = resultsSimd[i];
+            std::cerr << "Saved Upper Bound (alignment Score):" << std::endl;
 
             bool computeLb = true;
             for (unsigned m = 0; m < length(ali.mask); ++m)
                 if(ali.mask[m] != ali.maskOld[m])
-                    computeLb = false; // TODO use this flag to exclude the lower bound computation
-            std::cerr << "Created mask:";
+                    computeLb = false; // this flag is used to exclude the lower bound computation if the mask is unchanged
 
-            for (auto & mask_pair : ali.mask)
-                std::cerr << " (" << mask_pair.first << "," << mask_pair.second << ")";
-            std::cerr << std::endl;
+            if(computeLb) {
 
-            ali.upperBound = resultsSimd[i];
+                createNewLambdaLines(ali, options.useOppositLineUB);
+                std::cerr << "Included in Lambda vector the new alignment lines:" << std::endl;
 
-            // The MWM is computed to fill the LowerBound
-            if (options.lowerBoundMethod == LBLEMONMWM)
-            {
-                std::pair<double, double> old_bounds{ali.lowerBound, ali.upperBound};
-                TMapVect lowerBound4Lemon;
-                lowerBound4Lemon.resize(numVertices(ali.bppGraphH.inter)); //TODO check this
-                std::cout << alignsSimd[i] << std::endl;
-                computeLowerBound(ali, & lowerBound4Lemon);
-//                computeBounds(ali, & lowerBound4Lemon); // weightLineVect receives seq indices of best pairing
-//                computeUpperBoundScore(ali); // upperBound = sum of all probability lines
-                myLemon::computeLowerBoundScore(lowerBound4Lemon, ali);
-                ali.lowerBound = ali.lowerLemonBound.mwmPrimal + ali.sequenceScore;
-                // ali.slm = ali.slm - (ali.lowerLemonBound.mwmCardinality * 2);
-                _VV(options, "Computed maximum weighted matching using the LEMON library.");
-                if (old_bounds.first != ali.lowerBound || old_bounds.second != ali.upperBound)
-                    _VV(options, "new l/u bounds: " << ali.lowerBound << " / " << ali.upperBound);
+                // The MWM is computed to fill the LowerBound
+                if (options.lowerBoundMethod == LBLEMONMWM) {
+                    std::pair<double, double> old_bounds{ali.lowerBound, ali.upperBound};
+                    TMapVect lowerBound4Lemon;
+                    lowerBound4Lemon.resize(numVertices(ali.bppGraphH.inter)); //TODO check this
+                    std::cout << alignsSimd[i] << std::endl;
+                    computeLowerBound(ali, & lowerBound4Lemon);
+                    //                computeBounds(ali, & lowerBound4Lemon); // weightLineVect receives seq indices of best pairing
+                    //                computeUpperBoundScore(ali); // upperBound = sum of all probability lines
+                    myLemon::computeLowerBoundScore(lowerBound4Lemon, ali);
+                    ali.lowerBound = ali.lowerLemonBound.mwmPrimal + ali.sequenceScore;
+                    // ali.slm = ali.slm - (ali.lowerLemonBound.mwmCardinality * 2);
+                    _VV(options, "Computed maximum weighted matching using the LEMON library.");
+                    if (old_bounds.first != ali.lowerBound || old_bounds.second != ali.upperBound)
+                    _VV(options,"new l/u bounds: " << ali.lowerBound << " / " << ali.upperBound);
+                } else if (options.lowerBoundMethod == LBAPPROXMWM) // TODO Verify the procedure! Approximation of MWM is computed to fill the LowerBound
+                {
+                    computeBounds(ali, NULL);  // TODO verify this call and reimplement the approximation if better than gready
+                } else if (options.lowerBoundMethod == LBLINEARTIMEMWM) // TODO Verify the procedure! using greedy algorithm
+                {
+                    TMapVect lowerBound4Lemon;
+                    lowerBound4Lemon.resize(length(ali.mask));
+                    computeBounds(ali, &lowerBound4Lemon);
+                    computeLowerBoundGreedy(lowerBound4Lemon, ali);
+                    ali.lowerBound = ali.lowerGreedyBound;
+                    // ali.slm = ali.slm - (ali.lowerLemonBound.mwmCardinality * 2);
+                }
             }
-            else if (options.lowerBoundMethod == LBAPPROXMWM) // Approximation of MWM is computed to fill the LowerBound
-            {
-                computeBounds(ali, NULL);
-                computeLowerAndUpperBoundScore(ali);
-            }
-            else if (options.lowerBoundMethod == LBMWMTEST) // Function used to test the aproximation of MWM is computed to fill the LowerBound
-            {
-                //  In this branch three different methods are available for the computation: 1) the MWM approx, 2) the lemon MWM, 3) the seqan MWM <to be implemented>
-                //  The approximation is used while the other structures are computed
-                //  Define the datastructure that will be passed to the lemon::MWM function to compute the full lowerBound
-
-                // Compute the MWM with the Lemon library
-                TMapVect lowerBound4Lemon;
-                lowerBound4Lemon.resize(length(ali.mask));
-                computeBounds(ali, & lowerBound4Lemon);
-                computeLowerAndUpperBoundScore(ali);  // also calculate GU approximation
-                myLemon::computeLowerBoundScore(lowerBound4Lemon, ali);
-
-                // Compute the MWM with the seqan greedy MWM algorithm
-                computeLowerBoundGreedy(lowerBound4Lemon, ali);
-
-                _VVV(options, "Upper bound              = " << ali.upperBound);
-                _VVV(options, "Lower Bound lemon primal = " << ali.lowerLemonBound.mwmPrimal << " \tdual = "
-                                                            << ali.lowerLemonBound.mwmDual);
-                _VVV(options, "Lower bound seqan greedy = " << ali.lowerGreedyBound);
-                _VVV(options, "Lower bound approx       = " << ali.lowerBound);
-                _VVV(options, "num edges (slm) = " << ali.slm);
-            }
-            else if(options.lowerBoundMethod == LBLINEARTIMEMWM) // using greedy algorithm
-            {
-                TMapVect lowerBound4Lemon;
-                lowerBound4Lemon.resize(length(ali.mask));
-                computeBounds(ali, & lowerBound4Lemon);
-                computeUpperBoundScore(ali);
-
-                computeLowerBoundGreedy(lowerBound4Lemon, ali);
-                ali.lowerBound = ali.lowerGreedyBound;
-                // ali.slm = ali.slm - (ali.lowerLemonBound.mwmCardinality * 2);
-            }
-
-            // TODO move saveBestAligns call here?
             if ((ali.upperBound - ali.lowerBound < options.epsilon))
             {
                 // alignment is finished
@@ -288,13 +265,15 @@ int main (int argc, char const ** argv)
             {
                 // save previous step size
                 double const prev_stepSize = ali.stepSize;
-                seqan::String<std::pair <unsigned, unsigned> > listUnclosedLoopMask;
-                computeSlm(ali, listUnclosedLoopMask);
                 //  Compute the step size for the Lambda update
                 if (ali.slm > 0)
                     ali.stepSize = ali.my * ((ali.upperBound - ali.lowerBound) / ali.slm);
                 else
                     ali.stepSize = 0;
+
+                seqan::String<std::pair <unsigned, unsigned> > listUnclosedLoopMask;
+                // Compute slm factor
+                computeSlm(ali, listUnclosedLoopMask);
 
                 if (iter == 0)
                 {
@@ -325,7 +304,8 @@ int main (int argc, char const ** argv)
                 if (prev_stepSize != ali.stepSize)
                     _VV(options, "The new step size for alignment " << i << " is " << ali.stepSize);
 
-                updateLambda(ali, listUnclosedLoopMask);
+                // Update Lambda Steps using gamma of the new lines
+                updateLambdaStep(ali, listUnclosedLoopMask);
             }
             saveBestAligns(ali, alignsSimd[i], resultsSimd[i], iter);
         }

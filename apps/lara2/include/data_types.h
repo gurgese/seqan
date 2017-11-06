@@ -210,6 +210,7 @@ struct RnaStructAlign
 //    TScoreValue bestAlignScore{std::numeric_limits<TScoreValue>::lowest()};
 // Mask that represents the matches from the computed alignment
     seqan::String<std::pair<unsigned, unsigned> > mask;
+    seqan::String<std::pair<unsigned, unsigned> > maskOld;
 
 // Lower bound fields
     double lowerBound{};

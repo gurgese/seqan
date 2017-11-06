@@ -154,10 +154,11 @@ int main (int argc, char const ** argv)
             ali.structScore.score_matrix.data_tab[j] /= options.sequenceScale;
 
         // initialize memory for the fields of the alignment property data structure
-        resize (ali.lamb, std::max(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));  // TODO implement the maximum and minimum check before to come in this loop
-        //resize (ali.lamb, numVertices(ali.bppGraphH.inter));
-        reserve(ali.mask, std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter))); // This will destroy my info concerning the indexing
-        //reserve(ali.mask, numVertices(ali.bppGraphV.inter));
+        //resize (ali.lamb, std::max(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));  // TODO implement the maximum and minimum check before to come in this loop
+        resize (ali.lamb, numVertices(ali.bppGraphH.inter));
+        //reserve(ali.mask, std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter))); // This will destroy my info concerning the indexing
+        reserve(ali.mask, numVertices(ali.bppGraphV.inter));
+        reserve(ali.maskOld, numVertices(ali.bppGraphV.inter));
         resize(ali.weightLineVect, numVertices(ali.bppGraphV.inter));
         ali.my = options.my;
 
@@ -202,8 +203,15 @@ int main (int argc, char const ** argv)
         for (unsigned i = 0; i < length(alignsSimd); ++i)
         {
             TRnaAlign & ali = rnaAligns[i];
+            ali.maskOld = ali.mask;
             createMask(ali, alignsSimd[i], options);
+
+            bool computeLb = true;
+            for (unsigned m = 0; m < length(ali.mask); ++m)
+                if(ali.mask[m] != ali.maskOld[m])
+                    computeLb = false; // TODO use this flag to exclude the lower bound computation
             std::cerr << "Created mask:";
+
             for (auto & mask_pair : ali.mask)
                 std::cerr << " (" << mask_pair.first << "," << mask_pair.second << ")";
             std::cerr << std::endl;
@@ -216,12 +224,12 @@ int main (int argc, char const ** argv)
                 std::pair<double, double> old_bounds{ali.lowerBound, ali.upperBound};
                 TMapVect lowerBound4Lemon;
                 lowerBound4Lemon.resize(numVertices(ali.bppGraphH.inter)); //TODO check this
+                std::cout << alignsSimd[i] << std::endl;
                 computeLowerBound(ali, & lowerBound4Lemon);
-                return 1; // I GU check until this point
-                computeBounds(ali, & lowerBound4Lemon); // weightLineVect receives seq indices of best pairing
+//                computeBounds(ali, & lowerBound4Lemon); // weightLineVect receives seq indices of best pairing
 //                computeUpperBoundScore(ali); // upperBound = sum of all probability lines
                 myLemon::computeLowerBoundScore(lowerBound4Lemon, ali);
-                ali.lowerBound = ali.lowerLemonBound.mwmPrimal;
+                ali.lowerBound = ali.lowerLemonBound.mwmPrimal + ali.sequenceScore;
                 // ali.slm = ali.slm - (ali.lowerLemonBound.mwmCardinality * 2);
                 _VV(options, "Computed maximum weighted matching using the LEMON library.");
                 if (old_bounds.first != ali.lowerBound || old_bounds.second != ali.upperBound)
@@ -280,7 +288,8 @@ int main (int argc, char const ** argv)
             {
                 // save previous step size
                 double const prev_stepSize = ali.stepSize;
-
+                seqan::String<std::pair <unsigned, unsigned> > listUnclosedLoopMask;
+                computeSlm(ali, listUnclosedLoopMask);
                 //  Compute the step size for the Lambda update
                 if (ali.slm > 0)
                     ali.stepSize = ali.my * ((ali.upperBound - ali.lowerBound) / ali.slm);
@@ -316,7 +325,7 @@ int main (int argc, char const ** argv)
                 if (prev_stepSize != ali.stepSize)
                     _VV(options, "The new step size for alignment " << i << " is " << ali.stepSize);
 
-                updateLambda(ali);
+                updateLambda(ali, listUnclosedLoopMask);
             }
             saveBestAligns(ali, alignsSimd[i], resultsSimd[i], iter);
         }

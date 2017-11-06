@@ -215,12 +215,13 @@ int main (int argc, char const ** argv)
             ali.upperBound = resultsSimd[i];
             std::cerr << "Saved Upper Bound (alignment Score):" << std::endl;
 
-            bool computeLb = true;
+            bool computeLb = false;
             for (unsigned m = 0; m < length(ali.mask); ++m)
                 if(ali.mask[m] != ali.maskOld[m])
-                    computeLb = false; // this flag is used to exclude the lower bound computation if the mask is unchanged
+                    computeLb = true; // this flag is used to exclude the lower bound computation if the mask is unchanged
 
-            if(computeLb) {
+            if(computeLb || i == 0)
+            {
 
                 createNewLambdaLines(ali, options.useOppositLineUB);
                 std::cerr << "Included in Lambda vector the new alignment lines:" << std::endl;

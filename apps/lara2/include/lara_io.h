@@ -104,9 +104,10 @@ void _readRnaInputFile(RnaStructContents & filecontents, CharString filename, TO
 template <typename TOption>
 void plotOutput(TOption const & options, TRnaAlignVect & rnaAligns)
 {
-    for (unsigned i = 0; i < length(rnaAligns); ++i)
+    for (TRnaAlign const & ali : rnaAligns)
+    //for (unsigned i = 0; i < length(rnaAligns); ++i)
     {
-
+/*
         _VV(options, "******* For Minimum Stepsize *******" << std::endl);
         _VV(options, "Alignment of sequences " << rnaAligns[i].idBppSeqH << ":" << rnaAligns[i].idBppSeqV);
         _VV(options, "Iteration where MinStepSize has been found " << rnaAligns[i].forMinBound.it);
@@ -127,6 +128,15 @@ void plotOutput(TOption const & options, TRnaAlignVect & rnaAligns)
         _VV(options, "The step size to be used for Lambda at last iteration is " << rnaAligns[i].stepSize << "\n");
         _VV(options, "Best alignment based on the Score is " << rnaAligns[i].forScore.bestAlignScore << "\n"
                                                              << rnaAligns[i].forScore.bestAlign);
+ */
+        _VV(options, "******* For Closest Bounds *******" << std::endl);
+        _VV(options, "Alignment of sequences " << ali.idBppSeqH << ":" << ali.idBppSeqV);
+        _VV(options, "Iteration where the closest bounds have been found " << ali.forMinDiff.it);
+        _VV(options, "Best Lower bound is " << ali.forMinDiff.lowerBound);
+        _VV(options, "Best Upper bound is " << ali.forMinDiff.upperBound);
+        _VV(options, "Minimum step size is " << ali.forMinDiff.stepSizeBound);
+        _VV(options, "Best alignment based on the the closest Bounds is " << ali.forMinDiff.bestAlignScore << "\n"
+                                                                          << ali.forMinDiff.bestAlign);
     }
 }
 

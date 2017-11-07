@@ -233,6 +233,7 @@ struct RnaStructAlign
 
 //  Status when the minumum difference between the two bounds is detected
     TBestAlign forMinBound;
+    TBestAlign forMinDiff;
 //    unsigned itMinBounds; //to be used for the best lower bound
 //    double lowerMinBound{};
 //    double upperMinBound{};

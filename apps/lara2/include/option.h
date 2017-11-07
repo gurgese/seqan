@@ -141,7 +141,7 @@ struct Options
 // if structureScoring=SCALING then we have to give a scaling factor
     double scalingFactor;
 // if true the opposite lines found during the upper bound computation with a max score must be saved and used
-    double useOppositLineUB;
+    bool useOppositLineUB;
 // specify the location of T-COFFEE
     seqan::CharString tcoffeeLocation;
 // specify the method to be used to create the T-Coffe library
@@ -182,8 +182,8 @@ struct Options
             generatorGapOpen(-6.0),
             generatorGapExtend(-2.0),
             // generatorSuboptimality(40),
-            laraGapOpen(-12.0),
-            laraGapExtend(-5.0),
+            laraGapOpen(-6.0),
+            laraGapExtend(-2.0),
             sequenceScale(1.0),
             rsaGapPenalty(3.0),
             structureScoring(LOGARITHMIC),

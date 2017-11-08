@@ -58,15 +58,12 @@ using namespace seqan;
 // ----------------------------------------------------------------------------
 
 template <typename TOptions>
-void createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & options)
+bool createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & options)
 {
     typedef typename Iterator<Gaps<TSequence, seqan::ArrayGaps> const, Standard>::Type TGapsIter;
 
     Row<TAlign>::Type row0 = row(align, 0);
     Row<TAlign>::Type row1 = row(align, 1);
-
-    clear(rnaAlign.mask);
-    rnaAlign.sequenceScore = 0;
 
     // Get iterators.
     TGapsIter it0      = begin(row0);
@@ -76,8 +73,14 @@ void createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & opt
 
     // State whether we have already opened a gap.
     bool isGapOpen0 = false, isGapOpen1 = false;
+    // Keep track of the sequence positions for mask.
+    std::pair<unsigned, unsigned> sourcePos(0u, 0u);
+    // True, if this function changes the recent mask, False otherwise.
+    bool changedMask = false;
+    // Sum up the sequence and gap score.
+    rnaAlign.sequenceScore = 0;
 
-    for (unsigned column = 0u; it0 != itEnd0 && it1 != itEnd1; ++it0, ++it1, ++column)
+    for (unsigned lineCount = 0u; it0 != itEnd0 && it1 != itEnd1; ++it0, ++it1)
     {
         // Gaps in first sequence
         if (isGap(it0))
@@ -91,6 +94,7 @@ void createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & opt
                 rnaAlign.sequenceScore += options.laraGapExtend;
             }
             isGapOpen0 = true;
+            ++sourcePos.second;
         }
         else
         {
@@ -109,6 +113,7 @@ void createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & opt
                 rnaAlign.sequenceScore += options.laraGapExtend;
             }
             isGapOpen1 = true;
+            ++sourcePos.first;
         }
         else
         {
@@ -118,14 +123,27 @@ void createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & opt
         // Match or mismatch
         if (!isGap(it0) && !isGap(it1))
         {
-            rnaAlign.sequenceScore += score(options.laraScoreMatrix, *it0, *it1);
-
             // create mask entry
-            appendValue(rnaAlign.mask, std::make_pair(toSourcePosition(row0, column), toSourcePosition(row1, column)));
+            if (lineCount >= length(rnaAlign.mask))
+            {
+                appendValue(rnaAlign.mask, sourcePos);
+                changedMask = true;
+            }
+            else if (rnaAlign.mask[lineCount] != sourcePos)
+            {
+                rnaAlign.mask[lineCount] = sourcePos;
+                changedMask = true;
+            }
+
+            ++lineCount;
+            ++sourcePos.first;
+            ++sourcePos.second;
+            rnaAlign.sequenceScore += score(options.laraScoreMatrix, *it0, *it1);
         }
     }
     SEQAN_ASSERT(it0 == itEnd0);
     SEQAN_ASSERT(it1 == itEnd1);
+    return changedMask;
 }
 
 // ----------------------------------------------------------------------------

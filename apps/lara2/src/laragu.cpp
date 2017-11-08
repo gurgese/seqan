@@ -145,28 +145,16 @@ int main (int argc, char const ** argv)
 
     for (TRnaAlign & ali : rnaAligns)
     {
-        // apply scaling of the score matrix, according to run time parameter ssc
-        //TODO check if scaling is not performed again anywhere else
+        // the lambda structs are referenced by the index of the first sequence
+        resize(ali.lamb, numVertices(ali.bppGraphH.inter));
+        // the weight lines are referenced by the index of the second sequence
+        resize(ali.weightLineVect, numVertices(ali.bppGraphV.inter));
+        // allocate capacity for mask: the length of the shorter sequence is the maximum number of expressed lines
+        reserve(ali.mask, std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
+
         ali.structScore.score_matrix = options.laraScoreMatrix;
-        ali.structScore.score_matrix.data_gap_extend /= options.sequenceScale;
-        ali.structScore.score_matrix.data_gap_open   /= options.sequenceScale;
-        for (unsigned j = 0; j < length(options.laraScoreMatrix.data_tab[j]); ++j)
-            ali.structScore.score_matrix.data_tab[j] /= options.sequenceScale;
-
-        // initialize memory for the fields of the alignment property data structure
-        //resize (ali.lamb, std::max(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
-        // TODO implement the maximum and minimum check before to come in this loop
-        resize (ali.lamb, numVertices(ali.bppGraphH.inter));
-        //reserve(ali.mask, std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
-        // This will destroy my info concerning the indexing
-        reserve(ali.mask, numVertices(ali.bppGraphV.inter));
-        reserve(ali.maskOld, numVertices(ali.bppGraphV.inter));
-//        resize(ali.weightLineVect, numVertices(ali.bppGraphV.inter));
-        ali.my = options.my;
-
-        // Add struct scoring scheme pointers to each alignment cell of the alignment vector
-        // set pointer to lambda vector
         ali.structScore.lamb = & ali.lamb;
+        ali.my = options.my;
     }
 
     // Create the alignment data structure that will host the alignments with small difference between bounds
@@ -204,19 +192,13 @@ int main (int argc, char const ** argv)
         for (unsigned i = 0; i < length(alignsSimd); ++i)
         {
             TRnaAlign & ali = rnaAligns[i];
-            ali.maskOld = ali.mask;
-            createMask(ali, alignsSimd[i], options);
+            bool changedMask = createMask(ali, alignsSimd[i], options);
 
             ali.upperBound = resultsSimd[i];
             ali.bestUpperBound = std::min(ali.bestUpperBound, ali.upperBound);
 //            std::cerr << "Saved Upper Bound (alignment Score)" << std::endl;
 
-            bool computeLb = false;
-            for (unsigned m = 0; m < length(ali.mask); ++m)
-                if(ali.mask[m] != ali.maskOld[m])
-                    computeLb = true; // this flag is used to exclude the lower bound computation if the mask is unchanged
-
-            if(computeLb || i == 0)
+            if (changedMask || i == 0)
             {
 
                 createNewLambdaLines(ali, options.useOppositLineUB, iter);

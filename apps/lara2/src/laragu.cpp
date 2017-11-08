@@ -148,7 +148,7 @@ int main (int argc, char const ** argv)
         // the lambda structs are referenced by the index of the first sequence
         resize(ali.lamb, numVertices(ali.bppGraphH.inter));
         // the weight lines are referenced by the index of the second sequence
-        resize(ali.weightLineVect, numVertices(ali.bppGraphV.inter));
+//        resize(ali.weightLineVect, numVertices(ali.bppGraphV.inter));
         // allocate capacity for mask: the length of the shorter sequence is the maximum number of expressed lines
         reserve(ali.mask, std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
 

@@ -72,14 +72,13 @@ template <typename TOptions>
 void setScoreMatrix(TOptions & options)
 {
     options.laraScoreMatrix.data_gap_extend = options.laraGapExtend;
-    options.laraScoreMatrix.data_gap_open = options.laraGapOpen;
+    options.laraScoreMatrix.data_gap_open   = options.laraGapOpen;
     if (empty(options.laraScoreMatrixName))
     {
         _V(options, "Predefined RIBOSUM matrix will be used");
         setDefaultScoreMatrix(options.laraScoreMatrix, TRibosum());
-        return;
     }
-    if (loadScoreMatrix(options.laraScoreMatrix, toCString(options.laraScoreMatrixName)))
+    else if (loadScoreMatrix(options.laraScoreMatrix, toCString(options.laraScoreMatrixName)))
     {
         _V(options, "Provided scoring matrix will be used " << options.laraScoreMatrixName);
     }
@@ -90,6 +89,11 @@ void setScoreMatrix(TOptions & options)
         setDefaultScoreMatrix(options.laraScoreMatrix, TRibosum());
     }
 
+    // scale the matrix
+    options.laraScoreMatrix.data_gap_extend /= options.sequenceScale;
+    options.laraScoreMatrix.data_gap_open   /= options.sequenceScale;
+    for (double & matrixEntry : options.laraScoreMatrix.data_tab)
+        matrixEntry /= options.sequenceScale;
 }
 
 // ----------------------------------------------------------------------------
@@ -100,12 +104,9 @@ template <typename TResultsSimd, typename TAlignsSimd, typename TOptions>
 void firstSimdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & alignsSimd, TOptions const & options)
 {
     TScoreMatrix firstScoreMatrix = options.laraScoreMatrix;
-    firstScoreMatrix.data_gap_extend = options.generatorGapExtend;
-    firstScoreMatrix.data_gap_open = options.generatorGapOpen;
-//    for(unsigned j = 0; j < length(firstScoreMatrix.data_tab); ++j)
-//    {
-//        laraScoreMatrix.data_tab[j] = laraScoreMatrix.data_tab[j] / options.sequenceScale;
-//    }
+    firstScoreMatrix.data_gap_extend = options.generatorGapExtend / options.sequenceScale;
+    firstScoreMatrix.data_gap_open   = options.generatorGapOpen   / options.sequenceScale;
+
     if (!options.globalLocal)  //TODO implement the global-unconstrained alignment using the parameters in the options
     {
         if (options.affineLinearDgs == 0)

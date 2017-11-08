@@ -154,14 +154,14 @@ int main (int argc, char const ** argv)
             ali.structScore.score_matrix.data_tab[j] /= options.sequenceScale;
 
         // initialize memory for the fields of the alignment property data structure
-        resize (ali.lamb, std::max(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
+        //resize (ali.lamb, std::max(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
         // TODO implement the maximum and minimum check before to come in this loop
-        //resize (ali.lamb, numVertices(ali.bppGraphH.inter));
-        reserve(ali.mask, std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
+        resize (ali.lamb, numVertices(ali.bppGraphH.inter));
+        //reserve(ali.mask, std::min(numVertices(ali.bppGraphH.inter), numVertices(ali.bppGraphV.inter)));
         // This will destroy my info concerning the indexing
-        //reserve(ali.mask, numVertices(ali.bppGraphV.inter));
+        reserve(ali.mask, numVertices(ali.bppGraphV.inter));
         reserve(ali.maskOld, numVertices(ali.bppGraphV.inter));
-        resize(ali.weightLineVect, numVertices(ali.bppGraphV.inter));
+//        resize(ali.weightLineVect, numVertices(ali.bppGraphV.inter));
         ali.my = options.my;
 
         // Add struct scoring scheme pointers to each alignment cell of the alignment vector
@@ -238,12 +238,13 @@ int main (int argc, char const ** argv)
                 }
                 else if (options.lowerBoundMethod == LBAPPROXMWM)
                 {   // TODO Verify the procedure! Approximation of MWM is computed to fill the LowerBound
-                    computeBounds(ali, NULL);  // TODO verify this call and reimplement the approximation if better than gready
+//                    computeBounds(ali, NULL);  // TODO verify this call and reimplement the approximation if better than gready
+                    //TODO rewrite this function without weightLineVect
                 } else if (options.lowerBoundMethod == LBLINEARTIMEMWM) // TODO Verify the procedure! using greedy algorithm
                 {
                     TMapVect lowerBound4Lemon;
                     lowerBound4Lemon.resize(length(ali.mask));
-                    computeBounds(ali, &lowerBound4Lemon);
+//                    computeBounds(ali, &lowerBound4Lemon); //TODO rewrite this function without weightLineVect
                     computeLowerBoundGreedy(lowerBound4Lemon, ali);
                     ali.lowerBound = ali.lowerGreedyBound;
                     // ali.slm = ali.slm - (ali.lowerLemonBound.mwmCardinality * 2);

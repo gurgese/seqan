@@ -195,7 +195,7 @@ void computeLowerBound(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
 // ----------------------------------------------------------------------------
 // Function computeBounds() version that make use of the lemon MWM
 // ----------------------------------------------------------------------------
-
+/*
 void computeBounds(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon) // upper bound computation
 {
     Graph<Undirected<double> > & graph1 = rnaAlign.bppGraphH.inter;
@@ -247,6 +247,7 @@ void computeBounds(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon) // upper b
         }
     }
 }
+*/
 
 void computeLowerBoundGreedy(TMapVect & interactions, TRnaAlign & rnaAlign) //TODO to be updated and verifyed
 {
@@ -279,7 +280,7 @@ void saveBestAlignMinBound(TRnaAlign & rnaAlign, TAlign const & align, TScoreVal
         rnaAlign.forMinBound.stepSizeBound = rnaAlign.stepSize;
         rnaAlign.forMinBound.bestAlign = align;
         rnaAlign.forMinBound.bestAlignScore = alignScore;
-        rnaAlign.forMinBound.weightLineVect = rnaAlign.weightLineVect;
+//        rnaAlign.forMinBound.weightLineVect = rnaAlign.weightLineVect;
         rnaAlign.forMinBound.mask = rnaAlign.mask;
     }
 }
@@ -300,7 +301,7 @@ void saveBestAlignScore(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue 
         rnaAlign.forScore.stepSizeBound = rnaAlign.stepSize;
         rnaAlign.forScore.bestAlign = align;
         rnaAlign.forScore.bestAlignScore = alignScore;
-        rnaAlign.forScore.weightLineVect = rnaAlign.weightLineVect;
+//        rnaAlign.forScore.weightLineVect = rnaAlign.weightLineVect;
         rnaAlign.forScore.mask = rnaAlign.mask;
     }
 }
@@ -315,7 +316,7 @@ void saveBestAlignMinDiff(TRnaAlign & rnaAlign, TAlign const & align, TScoreValu
         rnaAlign.forMinDiff.stepSizeBound = rnaAlign.stepSize;
         rnaAlign.forMinDiff.bestAlign = align;
         rnaAlign.forMinDiff.bestAlignScore = alignScore;
-        rnaAlign.forMinDiff.weightLineVect = rnaAlign.weightLineVect;
+//        rnaAlign.forMinDiff.weightLineVect = rnaAlign.weightLineVect;
         rnaAlign.forMinDiff.mask = rnaAlign.mask;
     }
 }
@@ -535,6 +536,7 @@ void computeUpperBoundScore(TRnaAlign & rnaAlign)
 };
  */
 
+/*
 void updateLambdaOld(TRnaAlign & rnaAlign)  // TODO REMOVE THIS FUNCTION
 {
     for (size_t i = 0; i < length(rnaAlign.weightLineVect); ++i)
@@ -573,5 +575,6 @@ void updateLambdaOld(TRnaAlign & rnaAlign)  // TODO REMOVE THIS FUNCTION
         }
     }
 }
+*/
 
 #endif //_INCLUDE_ALIGNMENT_EDGES_H_

@@ -122,7 +122,7 @@ typedef std::vector<TMap > TMapVect;
 typedef std::vector<seqan::RnaRecord> TRnaVect;
 typedef StringSet<Rna5String, Dependent<Generous> > RnaSeqSet;
 
-struct weightLineStruct
+/*struct weightLineStruct
 {
     // String with size seq2
     unsigned seq1Index;
@@ -133,7 +133,7 @@ struct weightLineStruct
 
 // String with size seq2
 typedef seqan::String<weightLineStruct > TWeightLine;
-
+*/
 typedef seqan::Graph<seqan::Undirected<double> > TLowerBoundGraph;
 //TODO if the Lemon library is used this graph structure should be chosen as lemon graph in order to avoid the copy of the graph
 
@@ -191,7 +191,7 @@ struct bestAlign
     double lowerBound{std::numeric_limits<double>::lowest()};
     double upperBound{std::numeric_limits<double>::max()};
     double stepSizeBound{std::numeric_limits<TScoreValue>::max()};
-    TWeightLine weightLineVect;
+    //TWeightLine weightLineVect;
     seqan::String<std::pair <unsigned, unsigned> > mask;
 };
 typedef bestAlign TBestAlign;
@@ -223,7 +223,7 @@ struct RnaStructAlign
 
 // Upper bound fields
     double upperBound{std::numeric_limits<double>::max()};
-    TWeightLine weightLineVect; // receives interactions of MWM
+    //TWeightLine weightLineVect; // receives interactions of MWM
 
 // Parameters used to compute the stepsize
     int slm{}; // numberOfSubgradients

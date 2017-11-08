@@ -347,7 +347,7 @@ void updateLambdaLine(TValueScoreLine & maxProbScoreLine, unsigned & seqIndexInt
 // Function updateClosedLoops()
 // ----------------------------------------------------------------------------
 
-void updateClosedLoops(TRnaAlign & rnaAlign, bool & saveFoundInterPair)
+void updateClosedLoops(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
 {
     int tmpIndex = -1;
     for (std::pair<unsigned, unsigned> const & line : rnaAlign.mask)
@@ -361,12 +361,12 @@ void updateClosedLoops(TRnaAlign & rnaAlign, bool & saveFoundInterPair)
                    rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].seq2IndexInter)
             {
                 lambda.closedLoop = true;
-                if (saveFoundInterPair) //TODO probably this must be the default
+/*                if (saveFoundInterPair) //TODO check if this lambda must be updated with the closed loop or not
                     // if the map is not empty means that the line have been already evaluated in a previous iteration
                 {
                     rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].closedLoop = true;
                 }
-            }
+*/            }
         }
     }
 }
@@ -415,7 +415,7 @@ void createNewLambdaLines(TRnaAlign & rnaAlign, bool const & saveFoundInterPair,
 //                          << lambda.seq2IndexInter << " (" << lambda.fromUBPairing << ")" << std::endl;
                 lambda.fromUBPairing = false;
                 flagUpdateClosedLoops = true;
-                if (saveFoundInterPair)
+                if (saveFoundInterPair) //TODO probably this must be the default and removed from the options
                     // if the map is not empty means that the line have been already evaluated in a previous iteration
                 {
                     bool proceed2 = false;

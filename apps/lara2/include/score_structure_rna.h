@@ -86,10 +86,15 @@ public:
     {
         //   if (((*_mapLine)[seq1_pos]).find(seq2_pos) !=  ((*_mapLine)[seq1_pos]).end())
         if ((*lamb)[seq1_pos].map.count(seq2_pos) > 0)
-            return ((*lamb)[seq1_pos].map[seq2_pos].step + (*lamb)[seq1_pos].map[seq2_pos].maxProbScoreLine);
-        else
+        {
+            if((*lamb)[seq1_pos].map[seq2_pos].closedLoop)
+                return (*lamb)[seq1_pos].map[seq2_pos].maxProbScoreLine;
+            else
+                return ((*lamb)[seq1_pos].map[seq2_pos].step + (*lamb)[seq1_pos].map[seq2_pos].maxProbScoreLine);
+        } else
+        {
             return 0;
-
+        }
         /*
             if ( ( (*lamb)[seq1_pos].map[seq2_pos].seq1IndexPairLine !=
                 (*lamb)[ (*lamb)[seq1_pos].map[seq2_pos].seq1IndexInter ].map[ (*lamb)[seq1_pos].map[seq2_pos].seq2IndexInter ].seq1IndexInter)

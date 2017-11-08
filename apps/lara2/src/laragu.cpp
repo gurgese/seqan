@@ -188,7 +188,7 @@ int main (int argc, char const ** argv)
 //            std::cerr << ali.mask[j].first << " : " << ali.mask[j].second << std::endl;
 //        }
 
-        createNewLambdaLines(ali, options.useOppositLineUB);
+        createNewLambdaLines(ali, options.useOppositLineUB, 0);
     }
 
 
@@ -219,7 +219,7 @@ int main (int argc, char const ** argv)
             if(computeLb || i == 0)
             {
 
-                createNewLambdaLines(ali, options.useOppositLineUB);
+                createNewLambdaLines(ali, options.useOppositLineUB, iter);
 //                std::cerr << "Included in Lambda vector the new alignment lines" << std::endl;
 
                 // The MWM is computed to fill the LowerBound

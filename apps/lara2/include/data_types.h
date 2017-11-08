@@ -158,6 +158,8 @@ struct lambWeightStruct
     unsigned seq2IndexPairLine;
     unsigned seq1IndexInter;
     unsigned seq2IndexInter;
+    int iterUpdate;
+    bool closedLoop;
     bool fromUBPairing;
     lambWeightStruct() :
             step(0),
@@ -168,6 +170,8 @@ struct lambWeightStruct
             seq2IndexPairLine(0),
             seq1IndexInter(0),
             seq2IndexInter(0),
+            iterUpdate(-1),
+            closedLoop(false),
             fromUBPairing(false){} // This flag is used for saving mates found during the upper bound update of the line weights
 };
 

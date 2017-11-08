@@ -344,14 +344,43 @@ void updateLambdaLine(TValueScoreLine & maxProbScoreLine, unsigned & seqIndexInt
 }
 
 // ----------------------------------------------------------------------------
+// Function updateClosedLoops()
+// ----------------------------------------------------------------------------
+
+void updateClosedLoops(TRnaAlign & rnaAlign, bool & saveFoundInterPair)
+{
+    int tmpIndex = -1;
+    for (std::pair<unsigned, unsigned> const & line : rnaAlign.mask)
+    {
+        if (rnaAlign.lamb[line.first].map.count(line.second) > 0)
+        {
+            lambWeightStruct &lambda = rnaAlign.lamb[line.first].map[line.second];
+            if (lambda.seq1IndexPairLine ==
+                rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].seq1IndexInter
+                && lambda.seq2IndexPairLine ==
+                   rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].seq2IndexInter)
+            {
+                lambda.closedLoop = true;
+                if (saveFoundInterPair) //TODO probably this must be the default
+                    // if the map is not empty means that the line have been already evaluated in a previous iteration
+                {
+                    rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].closedLoop = true;
+                }
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
 // Function createNewLambdaLines()
 // ----------------------------------------------------------------------------
 
-void createNewLambdaLines(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
+void createNewLambdaLines(TRnaAlign & rnaAlign, bool const & saveFoundInterPair, unsigned const & iter)
 {
     Graph<Undirected<double> > & graph1 = rnaAlign.bppGraphH.inter;
     Graph<Undirected<double> > & graph2 = rnaAlign.bppGraphV.inter;
 
+    bool flagUpdateClosedLoops = false;
     // iterate all lines that are present in the alignment
     for (std::pair<unsigned, unsigned> const & line : rnaAlign.mask)
     {
@@ -367,6 +396,7 @@ void createNewLambdaLines(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
             {
                 proceed = true;
             }
+            rnaAlign.lamb[line.first].map[line.second].iterUpdate = iter;
             if (proceed)
             {
                 lambWeightStruct & lambda = rnaAlign.lamb[line.first].map[line.second];
@@ -384,6 +414,7 @@ void createNewLambdaLines(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
 //                          << lambda.maxProbScoreLine << " | " << lambda.seq1IndexInter << " : "
 //                          << lambda.seq2IndexInter << " (" << lambda.fromUBPairing << ")" << std::endl;
                 lambda.fromUBPairing = false;
+                flagUpdateClosedLoops = true;
                 if (saveFoundInterPair)
                     // if the map is not empty means that the line have been already evaluated in a previous iteration
                 {
@@ -395,6 +426,7 @@ void createNewLambdaLines(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
                     {
                         proceed2 = true;
                     }
+                    //rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].iterUpdate = iter; //TODO check if needed
                     if (proceed2)
                     {
                         lambWeightStruct & lambdaPair = rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter];
@@ -413,6 +445,8 @@ void createNewLambdaLines(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
             }
         }
     }
+    if(flagUpdateClosedLoops)
+        updateClosedLoops(rnaAlign, saveFoundInterPair);
     std::cerr << "lambda num elements: ";
     for(unsigned i=0; i < length(rnaAlign.lamb); ++i)
         std::cerr << length(rnaAlign.lamb[i].map) << "\t";
@@ -428,46 +462,61 @@ template <typename TMask>
 void computeSlm(TRnaAlign & rnaAlign, TMask & listUnclosedLoopMask)
 {
     rnaAlign.slm = 0;
-    for (std::pair<unsigned, unsigned> const & lineL : rnaAlign.mask)
+    for (std::pair<unsigned, unsigned> const & line : rnaAlign.mask)
     {
-        if (rnaAlign.lamb[lineL.first].map.count(lineL.second) > 0) {
+        if (rnaAlign.lamb[line.first].map.count(line.second) > 0)
+        {
+            bool stucturalLine = false;
+/*
             lambWeightStruct &lambdaL = rnaAlign.lamb[lineL.first].map[lineL.second];
 
             bool closedCircle = false;
             for (std::pair<unsigned, unsigned> const & lineM : rnaAlign.mask)
             {
-                if (lambdaL.seq1IndexInter == lineM.first && lambdaL.seq2IndexInter == lineM.second)
-                    closedCircle = true;
+                if (rnaAlign.lamb[lineM.first].map.count(lineM.second) > 0)
+                    if (lambdaL.seq1IndexInter == lineM.first && lambdaL.seq2IndexInter == lineM.second)
+                        closedCircle = true;
             }
             if (!closedCircle)
             {
                 rnaAlign.slm += 2;
                 appendValue(listUnclosedLoopMask, lineL);
             }
-        }
-
-/*
-        if (rnaAlign.lamb[line.first].map.count(line.second) > 0)
-        {
+*/
             lambWeightStruct & lambda = rnaAlign.lamb[line.first].map[line.second];
-            if (lambda.seq1IndexPairLine !=
-                rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].seq1IndexInter
-                || lambda.seq2IndexPairLine !=
-                   rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].seq2IndexInter)
+            if(lambda.closedLoop)
             {
-                ++rnaAlign.slm;
-
-                std::cout << line.first << " : " << line.second << " = " << lambda.maxProbScoreLine << " | ";
-                std::cout << lambda.seq1IndexInter << " : "
-                          << lambda.seq2IndexInter << " = "
-                          << rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].maxProbScoreLine
-                          << std::endl;
-                std::cout << rnaAlign.slm << std::endl;
-
+                if (lambda.iterUpdate >= 0 &&  lambda.iterUpdate == rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].iterUpdate)
+                {
+                    if (lambda.seq1IndexPairLine !=
+                        rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].seq1IndexInter
+                        || lambda.seq2IndexPairLine !=
+                           rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].seq2IndexInter)
+                    {
+                        stucturalLine = true;
+                    }
+                } else
+                {
+                    stucturalLine = true;
+                }
+            } else
+            {
+                stucturalLine = true;
+            }
+            if(stucturalLine)
+            {
+                ++rnaAlign.slm; //TODO chekc because JORG says +2
                 appendValue(listUnclosedLoopMask, line);
             }
-        }
+/*
+            std::cout << line.first << " : " << line.second << " = " << lambda.maxProbScoreLine << " | ";
+            std::cout << lambda.seq1IndexInter << " : "
+                      << lambda.seq2IndexInter << " = "
+                      << rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].maxProbScoreLine
+                      << std::endl;
+            std::cout << tmpSlm << " : " << rnaAlign.slm << std::endl;
 */
+        }
     }
     std::cerr << "slm = " << rnaAlign.slm << std::endl;
 }

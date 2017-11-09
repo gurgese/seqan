@@ -57,11 +57,10 @@ using namespace seqan;
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// Function _readRnaInputFile()
+// Function readRnaFile()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-void _readRnaInputFile(RnaStructContents & filecontents, CharString filename, TOption const & options)
+void readRnaFile(RnaStructContents & filecontents, CharString filename, LaraOptions const & options)
 {
     if (empty(filename))
         return;
@@ -75,6 +74,7 @@ void _readRnaInputFile(RnaStructContents & filecontents, CharString filename, TO
     }
     else
     {
+        // Read the file.
         _VVV(options, "Input file is Fasta/Fastq.");
         SeqFileIn seqFileIn(toCString(filename));
         StringSet<CharString> ids;
@@ -82,6 +82,8 @@ void _readRnaInputFile(RnaStructContents & filecontents, CharString filename, TO
         StringSet<CharString> quals;
         readRecords(ids, seqs, quals, seqFileIn);
         close(seqFileIn);
+
+        // Fill the data structures: identifier and sequence.
         resize(filecontents.records, length(ids));
         SEQAN_ASSERT_EQ(length(ids), length(seqs));
         for (typename Size<StringSet<CharString> >::Type idx = 0u; idx < length(ids); ++idx)
@@ -89,6 +91,7 @@ void _readRnaInputFile(RnaStructContents & filecontents, CharString filename, TO
             filecontents.records[idx].name = ids[idx];
             filecontents.records[idx].sequence = convert<Rna5String>(seqs[idx]);
         }
+        // For FastQ files: add quality annotation.
         if (length(quals) == length(ids))
         {
             for (typename Size<StringSet<CharString> >::Type idx = 0u; idx < length(ids); ++idx)
@@ -101,10 +104,9 @@ void _readRnaInputFile(RnaStructContents & filecontents, CharString filename, TO
 // Function plotOutput()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-void plotOutput(TOption const & options, TRnaAlignVect & rnaAligns)
+void plotOutput(LaraOptions const & options, RnaAlignmentTraitsVector & rnaAligns)
 {
-    for (TRnaAlign const & ali : rnaAligns)
+    for (RnaAlignmentTraits const & ali : rnaAligns)
     //for (unsigned i = 0; i < length(rnaAligns); ++i)
     {
 /*
@@ -140,7 +142,7 @@ void plotOutput(TOption const & options, TRnaAlignVect & rnaAligns)
     }
 }
 
-String<char> getEbpseqString(RnaStructContents & filecontents)
+CharString getEbpseqString(RnaStructContents & filecontents)
 {
     String<char> outstr;
     if (length(filecontents.records) == 0)

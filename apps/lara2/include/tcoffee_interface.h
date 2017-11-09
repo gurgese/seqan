@@ -97,9 +97,8 @@ typedef tcoffeeLib TTCoffeeLib;
 // Function computeTCoffeWeightsProportional()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-void computeTCoffeWeightsProportional(tcoffeePair & tcPair, SEQAN_UNUSED TOption const & options, RnaRecord const & rna1,
-                                      RnaRecord const & rna2, TRnaAlign & rnaAlign)
+void computeTCoffeWeightsProportional(tcoffeePair & tcPair, RnaRecord const & rna1,
+                                      RnaRecord const & rna2, RnaAlignmentTraits & rnaAlign)
 {
 //    std::cout << rnaAlign.forMinBound.bestAlign;
 //    std::cout << rnaAlign.forMinBound.bestAlignScore * options.sequenceScale << std::endl;
@@ -135,9 +134,8 @@ void computeTCoffeWeightsProportional(tcoffeePair & tcPair, SEQAN_UNUSED TOption
 // Function computeTCoffeWeightsSwitch()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-void computeTCoffeWeightsSwitch(tcoffeePair & tcPair, SEQAN_UNUSED TOption const & options, RnaRecord const & rna1,
-                                      RnaRecord const & rna2, TRnaAlign & rnaAlign)
+void computeTCoffeWeightsSwitch(tcoffeePair & tcPair, RnaRecord const & rna1,
+                                      RnaRecord const & rna2, RnaAlignmentTraits & rnaAlign)
 {
 //    std::cout << rnaAlign.forMinBound.bestAlign;
 //    std::cout << rnaAlign.forMinBound.bestAlignScore * options.sequenceScale << std::endl;
@@ -171,9 +169,8 @@ void computeTCoffeWeightsSwitch(tcoffeePair & tcPair, SEQAN_UNUSED TOption const
 // Function computeTCoffeWeightsSeqAlignOnly()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-void computeTCoffeWeightsSeqAlignOnly(tcoffeePair & tcPair, SEQAN_UNUSED TOption const & options, RnaRecord const & rna1,
-                                      RnaRecord const & rna2, TRnaAlign & rnaAlign)
+void computeTCoffeWeightsSeqAlignOnly(tcoffeePair & tcPair, RnaRecord const & rna1,
+                                      RnaRecord const & rna2, RnaAlignmentTraits & rnaAlign)
 {
 //    std::cout << rnaAlign.forMinBound.bestAlign;
 //    std::cout << rnaAlign.forMinBound.bestAlignScore * options.sequenceScale << std::endl;
@@ -222,9 +219,8 @@ void createInteractionFlags(String<bool> & flagVect, RnaStructureGraph const & g
 // Function computeTCoffeWeightsAllInter()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-void computeTCoffeWeightsAllInter(tcoffeePair & tcPair, TOption const & options, RnaRecord const & rna1,
-                                RnaRecord const & rna2, TRnaAlign & rnaAlign)
+void computeTCoffeWeightsAllInter(tcoffeePair & tcPair, LaraOptions const & options, RnaRecord const & rna1,
+                                RnaRecord const & rna2, RnaAlignmentTraits & rnaAlign)
 {
 //    std::cout << rnaAlign.forMinBound.bestAlign;
 //    std::cout << rnaAlign.forMinBound.bestAlignScore * options.sequenceScale << std::endl;
@@ -265,7 +261,7 @@ void computeTCoffeWeightsAllInter(tcoffeePair & tcPair, TOption const & options,
     else
     {
         _VVV(options, " passed from SEQALIGNONLY mode");
-        computeTCoffeWeightsSeqAlignOnly(tcPair, options, rna1, rna2, rnaAlign);
+        computeTCoffeWeightsSeqAlignOnly(tcPair, rna1, rna2, rnaAlign);
     }
 }
 
@@ -273,9 +269,8 @@ void computeTCoffeWeightsAllInter(tcoffeePair & tcPair, TOption const & options,
 // Function computeTCoffeWeightsFixedInter()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-void computeTCoffeWeightsFixedInter(tcoffeePair & tcPair, TOption const & options, RnaRecord const & rna1,
-                                    RnaRecord const & rna2, TRnaAlign & rnaAlign)
+void computeTCoffeWeightsFixedInter(tcoffeePair & tcPair, LaraOptions const & options, RnaRecord const & rna1,
+                                    RnaRecord const & rna2, RnaAlignmentTraits & rnaAlign)
 {
     tcoffeeW tcW;
     if (!empty(rna1.fixedGraphs) && !empty(rna2.fixedGraphs) &&
@@ -310,23 +305,23 @@ void computeTCoffeWeightsFixedInter(tcoffeePair & tcPair, TOption const & option
     else
     {
         _VVV(options, " passed from SEQALIGNONLY mode");
-        computeTCoffeWeightsSeqAlignOnly(tcPair, options, rna1, rna2, rnaAlign);
+        computeTCoffeWeightsSeqAlignOnly(tcPair, rna1, rna2, rnaAlign);
     }
 }
 
 // ----------------------------------------------------------------------------
 // Function computeTCoffeWeightsMethodSel()
 // ----------------------------------------------------------------------------
-template <typename TOption, typename TRecord>
-void computeTCoffeWeightsMethodSel(tcoffeePair & tcPair, TOption const & options, TRecord const & rna1,
-                         TRecord const & rna2, TRnaAlign & rnaAlign)
+template <typename TRecord>
+void computeTCoffeWeightsMethodSel(tcoffeePair & tcPair, LaraOptions const & options, TRecord const & rna1,
+                         TRecord const & rna2, RnaAlignmentTraits & rnaAlign)
 {
     if (options.tcoffeLibMode == PROPORTIONAL) {
         _VVV(options, " passed from PROPORTIONAL mode");
-        computeTCoffeWeightsProportional(tcPair, options, rna1, rna2, rnaAlign);
+        computeTCoffeWeightsProportional(tcPair, rna1, rna2, rnaAlign);
     } else if (options.tcoffeLibMode == SWITCH) {
         _VVV(options, " passed from SWITCH mode");
-        computeTCoffeWeightsSwitch(tcPair, options, rna1, rna2, rnaAlign);
+        computeTCoffeWeightsSwitch(tcPair, rna1, rna2, rnaAlign);
     } else if (options.tcoffeLibMode == ALLINTER) {
 //                std::cout << i << " seq1 " << rnaAligns[i].idBppSeqH << " seq2 " << rnaAligns[i].idBppSeqV << std::endl;
         _VVV(options, " passed from ALLINTER mode");
@@ -344,19 +339,19 @@ void computeTCoffeWeightsMethodSel(tcoffeePair & tcPair, TOption const & options
 // Function computeTCoffeWeights()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-int computeTCoffeWeights(TTCoffeeLib & tcLib, TOption const & options, RnaStructContents const & filecontents1,
-                          RnaStructContents const & filecontents2, TRnaAlignVect & rnaAligns)
+int computeTCoffeWeights(TTCoffeeLib & tcLib, LaraOptions const & options,
+                         RnaStructContentsPair const & filecontents,
+                         RnaAlignmentTraitsVector & rnaAligns)
 {
 //    #pragma omp parallel for num_threads(options.threads)
     for(unsigned i = 0; i < rnaAligns.size(); ++i)
     {
         tcoffeePair tcPair;
         tcPair.idSeqH = rnaAligns[i].idBppSeqH + 1;
-        tcPair.idSeqV = filecontents1.records.size() + rnaAligns[i].idBppSeqV + 1;
+        tcPair.idSeqV = filecontents.first.records.size() + rnaAligns[i].idBppSeqV + 1;
 //        if(rnaAligns[i].forMinBound.upperBound > 0)
-        computeTCoffeWeightsMethodSel(tcPair, options, filecontents1.records[rnaAligns[i].idBppSeqH],
-                                          filecontents2.records[rnaAligns[i].idBppSeqV], rnaAligns[i]);
+        computeTCoffeWeightsMethodSel(tcPair, options, filecontents.first.records[rnaAligns[i].idBppSeqH],
+                                          filecontents.second.records[rnaAligns[i].idBppSeqV], rnaAligns[i]);
         tcLib.rnaPairs.push_back(tcPair);
     }
     return 0;
@@ -366,9 +361,8 @@ int computeTCoffeWeights(TTCoffeeLib & tcLib, TOption const & options, RnaStruct
 // Function computeTCoffeWeights()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-int computeTCoffeWeights(TTCoffeeLib & tcLib, TOption const & options, RnaStructContents const & filecontents1,
-                          TRnaAlignVect & rnaAligns)
+int computeTCoffeWeights(TTCoffeeLib & tcLib, LaraOptions const & options, RnaStructContents const & filecontents1,
+                          RnaAlignmentTraitsVector & rnaAligns)
 {
 //    #pragma omp parallel for num_threads(options.threads)
     for(unsigned i = 0; i < rnaAligns.size(); ++i)
@@ -390,43 +384,7 @@ int computeTCoffeWeights(TTCoffeeLib & tcLib, TOption const & options, RnaStruct
 // Function createTCoffeeLib()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-void createTCoffeeLib(TOption const & options, RnaStructContents const & filecontents1,
-                      RnaStructContents const & filecontents2, TRnaAlignVect & rnaAligns)
-{
-    TTCoffeeLib tcLib;
-    tcLib.size = filecontents1.records.size() + filecontents2.records.size();
-    tcLib.rnas.resize(tcLib.size);
-    unsigned l = 0;
-    for (unsigned i = 0; i < filecontents1.records.size(); ++i)
-    {
-        tcLib.rnas[l].name = filecontents1.records[i].name;
-        tcLib.rnas[l].length = length(filecontents1.records[i].sequence);
-        tcLib.rnas[l].sequence = filecontents1.records[i].sequence;
-//        std::cout << filecontents1.records[i].sequence << std::endl;
-        ++l;
-    }
-
-    if (empty(filecontents2.records))
-    {
-        computeTCoffeWeights(tcLib, options, filecontents1, rnaAligns);
-    }
-    else
-    {
-        for (unsigned i = 0; i < filecontents2.records.size(); ++i)
-        {
-            tcLib.rnas[l].name = filecontents2.records[i].name;
-            tcLib.rnas[l].length = length(filecontents2.records[i].sequence);
-            tcLib.rnas[l].sequence = filecontents2.records[i].sequence;
-            ++l;
-        }
-        computeTCoffeWeights(tcLib, options, filecontents1, filecontents2, rnaAligns);
-    }
-    writeFileTCoffeeLib(tcLib, options);
-}
-
-template <typename TOption>
-void writeFileTCoffeeLib(TTCoffeeLib & tcLib, TOption const & options)
+void writeFileTCoffeeLib(TTCoffeeLib & tcLib, LaraOptions const & options)
 {
     bool had_err = false;
     std::ofstream tcoffeLibFile;
@@ -466,12 +424,48 @@ void writeFileTCoffeeLib(TTCoffeeLib & tcLib, TOption const & options)
             for (unsigned j = 0; j < tcLib.rnaPairs[i].alignWeights.size(); ++j)
             {
                 tcoffeLibFile << tcLib.rnaPairs[i].alignWeights[j].ntSeqH << " " << tcLib.rnaPairs[i].alignWeights[j].ntSeqV
-                          << " " <<  tcLib.rnaPairs[i].alignWeights[j].weight << std::endl;
+                              << " " <<  tcLib.rnaPairs[i].alignWeights[j].weight << std::endl;
             }
         }
         tcoffeLibFile << "! SEQ_1_TO_N" << std::endl;
         tcoffeLibFile.close();
     }
 }
+
+void createTCoffeeLib(LaraOptions const & options, RnaStructContentsPair const & filecontents,
+                      RnaAlignmentTraitsVector & rnaAligns)
+{
+    TTCoffeeLib tcLib;
+    tcLib.size = filecontents.first.records.size() + filecontents.second.records.size();
+    tcLib.rnas.resize(tcLib.size);
+    unsigned l = 0;
+    for (unsigned i = 0; i < filecontents.first.records.size(); ++i)
+    {
+        tcLib.rnas[l].name = filecontents.first.records[i].name;
+        tcLib.rnas[l].length = length(filecontents.first.records[i].sequence);
+        tcLib.rnas[l].sequence = filecontents.first.records[i].sequence;
+//        std::cout << filecontents.first.records[i].sequence << std::endl;
+        ++l;
+    }
+
+    if (empty(filecontents.second.records))
+    {
+        computeTCoffeWeights(tcLib, options, filecontents.first, rnaAligns);
+    }
+    else
+    {
+        for (unsigned i = 0; i < filecontents.second.records.size(); ++i)
+        {
+            tcLib.rnas[l].name = filecontents.second.records[i].name;
+            tcLib.rnas[l].length = length(filecontents.second.records[i].sequence);
+            tcLib.rnas[l].sequence = filecontents.second.records[i].sequence;
+            ++l;
+        }
+        computeTCoffeWeights(tcLib, options, filecontents, rnaAligns);
+    }
+    writeFileTCoffeeLib(tcLib, options);
+}
+
+
 
 #endif //_INCLUDE_TCOFFEE_INTERFACE_H_

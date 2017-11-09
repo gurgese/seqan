@@ -80,7 +80,7 @@ typedef IsSlash            IsPathDelimited;
 //TODO this can be re-written as a set of three maps with keys and values but
 //if in the future should be embedded in the parsing function is better to
 //conserve this style
-struct Options
+struct LaraOptions
 {
 // use base pairs or structure
     bool useBasePairs;
@@ -162,7 +162,7 @@ struct Options
     unsigned threads;
 // number of threads detected
     unsigned threadsCount;
-    Options() :
+    LaraOptions() :
             useBasePairs(true),
             affineLinearDgs(0),
             globalLocal(false),

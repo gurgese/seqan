@@ -51,8 +51,7 @@
 // Function bppInteractionGraphBuild()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-void bppInteractionGraphBuild(TRnaVect & rnaRecordVector, TOption const & options)
+void computeMissingInteractions(TRnaVect & rnaRecordVector, LaraOptions const & options)
 {
     bool const logStructureScoring = options.structureScoring == LOGARITHMIC;
 
@@ -68,19 +67,18 @@ void bppInteractionGraphBuild(TRnaVect & rnaRecordVector, TOption const & option
 // Function setScoreMatrix()
 // ----------------------------------------------------------------------------
 
-template <typename TOptions>
-void setScoreMatrix(TOptions & options)
+void setScoreMatrix(LaraOptions & options)
 {
     options.laraScoreMatrix.data_gap_extend = options.laraGapExtend;
     options.laraScoreMatrix.data_gap_open   = options.laraGapOpen;
     if (empty(options.laraScoreMatrixName))
     {
-        _V(options, "Predefined RIBOSUM matrix will be used");
+        _VV(options, "Predefined RIBOSUM matrix will be used");
         setDefaultScoreMatrix(options.laraScoreMatrix, TRibosum());
     }
     else if (loadScoreMatrix(options.laraScoreMatrix, toCString(options.laraScoreMatrixName)))
     {
-        _V(options, "Provided scoring matrix will be used " << options.laraScoreMatrixName);
+        _VV(options, "Provided scoring matrix will be used " << options.laraScoreMatrixName);
     }
     else
     {
@@ -100,8 +98,8 @@ void setScoreMatrix(TOptions & options)
 // Function firstSimdAlignsGlobalLocal()
 // ----------------------------------------------------------------------------
 
-template <typename TResultsSimd, typename TAlignsSimd, typename TOptions>
-void firstSimdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & alignsSimd, TOptions const & options)
+template <typename TResultsSimd, typename TAlignsSimd>
+void firstSimdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & alignsSimd, LaraOptions const & options)
 {
     TScoreMatrix firstScoreMatrix = options.laraScoreMatrix;
     firstScoreMatrix.data_gap_extend = options.generatorGapExtend / options.sequenceScale;
@@ -132,8 +130,8 @@ void firstSimdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & aligns
 // Function simdAlignsGlobalLocal()
 // ----------------------------------------------------------------------------
 //TODO modify this function in order to implement the SIMD alignment
-template <typename TResultsSimd, typename TAlignsSimd, typename TOptions>
-void simdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & alignsSimd, TRnaAlignVect const & rnaAligns, TOptions const & options)
+template <typename TResultsSimd, typename TAlignsSimd>
+void simdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & alignsSimd, RnaAlignmentTraitsVector const & rnaAligns, LaraOptions const & options)
 {
     if (!options.globalLocal)  //TODO implement the global-unconstrained alignment using the parameters in the options
     {
@@ -183,28 +181,11 @@ void simdAlignsGlobalLocal(TResultsSimd & resultsSimd, TAlignsSimd & alignsSimd,
     }
 };
 
-void createSeqanAlignments(StringSet<TAlign> & alignments, RnaSeqSet const & setH, RnaSeqSet const & setV)
-{
-    resize(alignments, length(setH));
-    auto it = makeZipIterator(begin(setH), begin(setV), begin(alignments));
-    auto itEnd = makeZipIterator(end(setH), end(setV), end(alignments));
-
-    while (it != itEnd)
-    {
-        TAlign align;
-        resize(rows(align), 2);
-        assignSource(row(align, 0), std::get<0>(*it));
-        assignSource(row(align, 1), std::get<1>(*it));
-        std::get<2>(*it) = align;
-        ++it;
-    }
-}
-
 // ----------------------------------------------------------------------------
 // Function crossproduct()
 // ----------------------------------------------------------------------------
 
-inline void _fillVectors (RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect::iterator & alignInfo,
+inline void _fillVectors (RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector::iterator & alignInfo,
                           TRnaVect::iterator const & it1, TRnaVect::iterator const & it2)
 {
     appendValue(setH, it1->sequence);
@@ -217,7 +198,7 @@ inline void _fillVectors (RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect::ite
 }
 
 // unique combination of all sequences of one single set
-void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect & rnaAligns, TRnaVect & seqs)
+void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector & rnaAligns, TRnaVect & seqs)
 {
     typename Size<TRnaVect>::Type const len = length(seqs);
     if (len == 0)
@@ -226,7 +207,7 @@ void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect & rnaAligns,
     reserve(setH, len * (len - 1) / 2);
     reserve(setV, len * (len - 1) / 2);
     resize(rnaAligns, len * (len - 1) / 2);
-    TRnaAlignVect::iterator alignInfo = rnaAligns.begin();
+    RnaAlignmentTraitsVector::iterator alignInfo = rnaAligns.begin();
 
     unsigned p = 0;
     for (TRnaVect::iterator it1 = seqs.begin(); it1 != seqs.end(); ++it1)
@@ -242,7 +223,7 @@ void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect & rnaAligns,
 }
 
 // combination of all sequences of two sets
-void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect & rnaAligns,
+void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector & rnaAligns,
                   TRnaVect & seqs1, TRnaVect & seqs2) {
     if (empty(seqs2))
     {
@@ -253,7 +234,7 @@ void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect & rnaAligns,
         reserve(setH, length(seqs1) * length(seqs2));
         reserve(setV, length(seqs1) * length(seqs2));
         resize(rnaAligns, length(seqs1) * length(seqs2));
-        TRnaAlignVect::iterator alignInfo = rnaAligns.begin();
+        RnaAlignmentTraitsVector::iterator alignInfo = rnaAligns.begin();
 
         unsigned p = 0;
         for (TRnaVect::iterator it1 = seqs1.begin(); it1 != seqs1.end(); ++it1)
@@ -267,6 +248,31 @@ void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, TRnaAlignVect & rnaAligns,
             }
         }
     }
+}
+
+void prepareAlignmentVector(StringSet<RnaAlignment> & alignments, RnaAlignmentTraitsVector & rnaAligns,
+                            RnaStructContentsPair & filecontents)
+{
+    RnaSeqSet setH;
+    RnaSeqSet setV;
+    crossproduct(setH, setV, rnaAligns, filecontents.first.records, filecontents.second.records);
+    SEQAN_ASSERT_EQ(length(setH), length(setV));
+    SEQAN_ASSERT_EQ(length(setH), length(rnaAligns));
+
+    resize(alignments, length(setH));
+    auto it = makeZipIterator(begin(setH), begin(setV), begin(alignments));
+    auto itEnd = makeZipIterator(end(setH), end(setV), end(alignments));
+
+    while (it != itEnd)
+    {
+        RnaAlignment align;
+        resize(rows(align), 2);
+        assignSource(row(align, 0), std::get<0>(*it));
+        assignSource(row(align, 1), std::get<1>(*it));
+        std::get<2>(*it) = align;
+        ++it;
+    }
+    SEQAN_ASSERT_EQ(length(alignments), length(rnaAligns));
 }
 
 #endif //_INCLUDE_STRUCT_ALIGN_H_

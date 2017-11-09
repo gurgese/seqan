@@ -53,7 +53,7 @@ struct RnaStructureScore;
 // Class PositionSeqScore Score
 // ----------------------------------------------------------------------------
 
-//template <typename TValue, typename TMapline, typename TSequence, typename TAlign>
+//template <typename TValue, typename TMapline, typename TSequence, typename RnaAlignment>
 //class Score<TValue, PositionSeqScore>
 template<typename TValue, typename TScoreMatrix, typename TLambVect>  //typename TGap
 class Score<TValue, RnaStructureScore<TScoreMatrix, TLambVect> >
@@ -87,10 +87,10 @@ public:
         //   if (((*_mapLine)[seq1_pos]).find(seq2_pos) !=  ((*_mapLine)[seq1_pos]).end())
         if ((*lamb)[seq1_pos].map.count(seq2_pos) > 0)
         {
-            if((*lamb)[seq1_pos].map[seq2_pos].closedLoop)
-                return (*lamb)[seq1_pos].map[seq2_pos].maxProbScoreLine;
-            else
-                return ((*lamb)[seq1_pos].map[seq2_pos].step + (*lamb)[seq1_pos].map[seq2_pos].maxProbScoreLine);
+//            if((*lamb)[seq1_pos].map[seq2_pos].closedLoop)
+//                return (*lamb)[seq1_pos].map[seq2_pos].maxProbScoreLine;
+//            else
+            return ((*lamb)[seq1_pos].map[seq2_pos].lambdaValue + (*lamb)[seq1_pos].map[seq2_pos].maxProbScoreLine);
         } else
         {
             return 0;
@@ -138,8 +138,8 @@ SequenceEntryForScore<Score<TValue, RnaStructureScore<TScoreMatrix, TLambVect> >
 // Function fillUpdateMapline()                          [RnaStructure Score]
 // --------------------------------------------------------------------------
 //TODO to be tested deeply
-/*template <typename TAlign, typename TMapLine, typename TSequence, typename TValue>
-void fillUpdateMapline(TMapLine & mapline, TAlign const & align, TSequence const & seq1, TValue const & factor)
+/*template <typename RnaAlignment, typename TMapLine, typename TSequence, typename TValue>
+void fillUpdateMapline(TMapLine & mapline, RnaAlignment const & align, TSequence const & seq1, TValue const & factor)
 //FIXME the sequence is used to pass the sequence type only
 {
     std::cerr << "function fillUpdateMapline\n";

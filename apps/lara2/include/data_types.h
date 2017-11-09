@@ -108,8 +108,7 @@ int const TCMAX = 1000;
 // Types used in the program
 // ============================================================================
 
-typedef seqan::Rna5String TSequence;
-typedef seqan::Align<TSequence, seqan::ArrayGaps> TAlign;      // align type
+typedef seqan::Align<seqan::Rna5String, seqan::ArrayGaps> RnaAlignment;      // align type
 typedef unsigned TPosition;
 typedef double TScoreValue;
 typedef seqan::CharString TString;
@@ -121,19 +120,8 @@ typedef seqan::String<TMap > TMapLine;
 typedef std::vector<TMap > TMapVect;
 typedef std::vector<seqan::RnaRecord> TRnaVect;
 typedef StringSet<Rna5String, Dependent<Generous> > RnaSeqSet;
+typedef std::pair<RnaStructContents, RnaStructContents> RnaStructContentsPair;
 
-/*struct weightLineStruct
-{
-    // String with size seq2
-    unsigned seq1Index;
-    double maxProbScoreLine;
-    unsigned seq1IndexPairLine;
-    unsigned seq2IndexPairLine;
-};
-
-// String with size seq2
-typedef seqan::String<weightLineStruct > TWeightLine;
-*/
 typedef seqan::Graph<seqan::Undirected<double> > TLowerBoundGraph;
 //TODO if the Lemon library is used this graph structure should be chosen as lemon graph in order to avoid the copy of the graph
 
@@ -148,38 +136,27 @@ struct lowerBoundLemonStruct
 typedef lowerBoundLemonStruct TlowerLemonBound;
 
 // lambda value for subgradient optimization, initialized with 0
-struct lambWeightStruct
+struct RnaInteraction
 {
-    double step;               // actual value of lambda  TODO change this name to lambda // name in old Lara: dual
-    double maxProbScoreLine;
-    double maxProbScoreLine1;
-    double maxProbScoreLine2;
-    unsigned seq1IndexPairLine;
-    unsigned seq2IndexPairLine;
-    unsigned seq1IndexInter;
-    unsigned seq2IndexInter;
-    int iterUpdate;
-    bool closedLoop;
-    bool fromUBPairing;
-    lambWeightStruct() :
-            step(0),
-            maxProbScoreLine(0),
-            maxProbScoreLine1(0),
-            maxProbScoreLine2(0),
-            seq1IndexPairLine(0),
-            seq2IndexPairLine(0),
-            seq1IndexInter(0),
-            seq2IndexInter(0),
-            iterUpdate(-1),
-            closedLoop(false),
-            fromUBPairing(false){} // This flag is used for saving mates found during the upper bound update of the line weights
+    double lambdaValue{0};
+    double maxProbScoreLine{0};
+    double maxProbScoreLine1{0};
+    double maxProbScoreLine2{0};
+    unsigned seq1IndexPairLine{0};
+    unsigned seq2IndexPairLine{0};
+    unsigned seq1IndexInter{0};
+    unsigned seq2IndexInter{0};
+    int iterUpdate{-1};
+    bool closedLoop{false};
+    // This flag is used for saving mates found during the upper bound update of the line weights.
+    bool fromUBPairing{false};
 };
 
-//typedef std::map<TPosition, lambWeightStruct> TMapWeight;
+//typedef std::map<TPosition, RnaInteraction> TMapWeight;
 
 struct lambStruct
 {
-    std::map<TPosition, lambWeightStruct> map; //mapLine;
+    std::map<unsigned, RnaInteraction> map; //mapLine;
 };
 
 //! Lambda Vector
@@ -189,7 +166,7 @@ typedef seqan::Score<double, RnaStructureScore<TScoreMatrix, TLambVect> > TScori
 
 struct bestAlign
 {
-    TAlign bestAlign;
+    RnaAlignment bestAlign;
     double bestAlignScore{std::numeric_limits<double>::lowest()};
     int it; //to be used for the best lower bound
     double lowerBound{std::numeric_limits<double>::lowest()};
@@ -200,23 +177,21 @@ struct bestAlign
 };
 typedef bestAlign TBestAlign;
 
-struct RnaStructAlign
+struct RnaAlignmentTraits
 {
 //public:
     seqan::RnaStructureGraph bppGraphH;
     seqan::RnaStructureGraph bppGraphV;
     unsigned idBppSeqH{};
     unsigned idBppSeqV{};
-    double sequenceScale{1.0};
 // The best computed alignment is saved in these fields
     TBestAlign forScore;
-//    TAlign bestAlign;
+//    RnaAlignment bestAlign;
 //    TScoreValue bestAlignScore{std::numeric_limits<TScoreValue>::lowest()};
 // Mask that represents the matches from the computed alignment
     seqan::String<std::pair<unsigned, unsigned> > mask;
 
-// Lower bound fields
-    double lowerBound{std::numeric_limits<double>::lowest()};
+
 //    TWeightLine lowerBoundVect;
 // This field is used to approximate the maximum weighted match If tests of this usage are positive we can cosider
 // to do not use anymore the Lemon MWM
@@ -224,25 +199,24 @@ struct RnaStructAlign
     TlowerLemonBound lowerLemonBound;
     double lowerGreedyBound;
 
-// Upper bound fields
+    // Lower bound values
+    double lowerBound{std::numeric_limits<double>::lowest()};
+    double bestLowerBound{std::numeric_limits<double>::lowest()};
+    // Upper bound values
     double upperBound{std::numeric_limits<double>::max()};
-    //TWeightLine weightLineVect; // receives interactions of MWM
+    double bestUpperBound{std::numeric_limits<double>::max()};
+
 
 // Parameters used to compute the stepsize
-    int slm{}; // numberOfSubgradients
-    double stepSize{std::numeric_limits<TScoreValue>::max()};
-    unsigned nonDecreasingIterations{};
-    double my{1.0};
+    int numberOfSubgradients{}; // numberOfSubgradients
+    double stepSize{std::numeric_limits<double>::max()};
+    double stepSizeScaling{1.0};
+    unsigned nonDecreasingIterations{0u};
 
 //  Status when the minumum difference between the two bounds is detected
     TBestAlign forMinBound;
     TBestAlign forMinDiff;
-//    unsigned itMinBounds; //to be used for the best lower bound
-//    double lowerMinBound{};
-//    double upperMinBound{};
-//    double stepSizeMinBound{std::numeric_limits<TScoreValue>::max()};
-//    TAlign bestAlignMinBounds;
-//    TScoreValue bestAlignScoreMinBounds;
+
 
 // String with size seq1 storing all the aligned lines
     TLambVect lamb;
@@ -251,29 +225,7 @@ struct RnaStructAlign
     TScoringSchemeStruct structScore;
 
     double sequenceScore;
-
-    double bestUpperBound{std::numeric_limits<double>::max()};
-    double bestLowerBound{std::numeric_limits<double>::lowest()};
-};// rnaStructAlign;
-
-typedef RnaStructAlign TRnaAlign;
-typedef std::vector<TRnaAlign> TRnaAlignVect;
-
-// REMOVE THIS AFTER DEBUGGING
-void printRnaStructAlign(TRnaAlign & a, unsigned i)
-{
-    std::cerr << i << "\tLambda Vector\n";
-    unsigned c1 = 0, c2 = 0;
-    for (lambStruct & m : a.lamb)
-    {
-        std::cerr << row(a.forMinBound.bestAlign, 0)[c1++] << " ";
-        std::cerr << row(a.forMinBound.bestAlign, 1)[c2++] << " ";
-        for (auto p = m.map.begin(); p != m.map.end(); ++p)
-        {
-            std::cerr << "("<< p->first << "|" << p->second.step << "|" << p->second.maxProbScoreLine << "|" << p->second.seq1IndexPairLine << "|" << p->second.seq2IndexPairLine << ")";
-        }
-        std::cerr << ";\n";
-    }
-}
+};
+typedef std::vector<RnaAlignmentTraits> RnaAlignmentTraitsVector;
 
 #endif //_INCLUDE_TOP_DATA_STRUCT_H_

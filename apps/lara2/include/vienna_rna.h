@@ -113,7 +113,6 @@ void computeBppMatrix(RnaRecord & rnaRecord, double thrBppm, bool logStructureSc
         }
          */
         double const minProb = 0.003; // taken from LISA > Lara
-        std::cerr << "logScale";
         for (unsigned i = 0; i < size; ++i)
         {
             SEQAN_ASSERT(pl1[i].i > 0 && static_cast<unsigned>(pl1[i].i) <= length(rnaRecord.sequence));
@@ -121,22 +120,17 @@ void computeBppMatrix(RnaRecord & rnaRecord, double thrBppm, bool logStructureSc
             // convert indices from range 1..length to 0..length-1
             if (pl1[i].p > minProb)
                 addEdge(bppMatrGraph.inter, pl1[i].i - 1, pl1[i].j - 1, log(pl1[i].p/minProb));
-            std::cerr << " " << log(pl1[i].p/minProb);
         }
-        std::cerr << std::endl;
     }
     else
     {
-        std::cerr << "not logScale";
         for (unsigned i = 0; i < size; ++i)
         {
             SEQAN_ASSERT(pl1[i].i > 0 && static_cast<unsigned>(pl1[i].i) <= length(rnaRecord.sequence));
             SEQAN_ASSERT(pl1[i].j > 0 && static_cast<unsigned>(pl1[i].j) <= length(rnaRecord.sequence));
             // convert indices from range 1..length to 0..length-1
             addEdge(bppMatrGraph.inter, pl1[i].i - 1, pl1[i].j - 1, pl1[i].p);
-            std::cerr << " " << pl1[i].p;
         }
-        std::cerr << std::endl;
     }
     append(rnaRecord.bppMatrGraphs, bppMatrGraph);
 

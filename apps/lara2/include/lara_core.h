@@ -57,13 +57,12 @@ using namespace seqan;
 // Function createMask()
 // ----------------------------------------------------------------------------
 
-template <typename TOptions>
-bool createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & options)
+bool createMask(RnaAlignmentTraits & rnaAlign, RnaAlignment const & align, LaraOptions const & options)
 {
-    typedef typename Iterator<Gaps<TSequence, seqan::ArrayGaps> const, Standard>::Type TGapsIter;
+    typedef typename Iterator<Gaps<Rna5String, ArrayGaps> const, Standard>::Type TGapsIter;
 
-    Row<TAlign>::Type row0 = row(align, 0);
-    Row<TAlign>::Type row1 = row(align, 1);
+    Row<RnaAlignment>::Type row0 = row(align, 0);
+    Row<RnaAlignment>::Type row1 = row(align, 1);
 
     // Get iterators.
     TGapsIter it0      = begin(row0);
@@ -150,7 +149,7 @@ bool createMask(TRnaAlign & rnaAlign, TAlign const & align, TOptions const & opt
 // Function computeLowerBound()
 // ----------------------------------------------------------------------------
 
-void computeLowerBound(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
+void computeLowerBound(RnaAlignmentTraits & rnaAlign, TMapVect * lowerBound4Lemon)
 {
     Graph<Undirected<double> > & graph1 = rnaAlign.bppGraphH.inter;
     Graph<Undirected<double> > & graph2 = rnaAlign.bppGraphV.inter;
@@ -206,7 +205,7 @@ void computeLowerBound(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
             }
 
         }
-//        rnaAlign.slm = nLoops + 1 - (nClosedLoops * 2); // TODO check this value: It should be referred to the alignment line only or to all the lambda?
+//        rnaAlign.numberOfSubgradients = nLoops + 1 - (nClosedLoops * 2); // TODO check this value: It should be referred to the alignment line only or to all the lambda?
     }
 }
 
@@ -214,7 +213,7 @@ void computeLowerBound(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
 // Function computeBounds() version that make use of the lemon MWM
 // ----------------------------------------------------------------------------
 /*
-void computeBounds(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon) // upper bound computation
+void computeBounds(RnaAlignmentTraits & rnaAlign, TMapVect * lowerBound4Lemon) // upper bound computation
 {
     Graph<Undirected<double> > & graph1 = rnaAlign.bppGraphH.inter;
     Graph<Undirected<double> > & graph2 = rnaAlign.bppGraphV.inter;
@@ -267,7 +266,7 @@ void computeBounds(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon) // upper b
 }
 */
 
-void computeLowerBoundGreedy(TMapVect & interactions, TRnaAlign & rnaAlign) //TODO to be updated and verifyed
+void computeLowerBoundGreedy(TMapVect & interactions, RnaAlignmentTraits & rnaAlign) //TODO to be updated and verifyed
 {
     TLowerBoundGraph graph;
 
@@ -286,7 +285,7 @@ void computeLowerBoundGreedy(TMapVect & interactions, TRnaAlign & rnaAlign) //TO
 // Function saveBestAlignMinBound()
 // ----------------------------------------------------------------------------
 
-void saveBestAlignMinBound(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore, unsigned index)
+void saveBestAlignMinBound(RnaAlignmentTraits & rnaAlign, RnaAlignment const & align, TScoreValue alignScore, unsigned index)
 {
 //    if ((rnaAlign.upperBound - rnaAlign.lowerBound) < (rnaAlign.upperMinBound - rnaAlign.lowerMinBound))
     if (rnaAlign.stepSize < rnaAlign.forMinBound.stepSizeBound)  //TODO check if this <= is expensive
@@ -307,7 +306,7 @@ void saveBestAlignMinBound(TRnaAlign & rnaAlign, TAlign const & align, TScoreVal
 // Function saveBestAlignScore()
 // ----------------------------------------------------------------------------
 
-void saveBestAlignScore(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore, int index)
+void saveBestAlignScore(RnaAlignmentTraits & rnaAlign, RnaAlignment const & align, TScoreValue alignScore, int index)
 {
 //    if ((rnaAlign.upperBound - rnaAlign.lowerBound) < (rnaAlign.upperMinBound - rnaAlign.lowerMinBound))
     if (rnaAlign.forScore.bestAlignScore < alignScore)
@@ -324,7 +323,7 @@ void saveBestAlignScore(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue 
     }
 }
 
-void saveBestAlignMinDiff(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore, int index)
+void saveBestAlignMinDiff(RnaAlignmentTraits & rnaAlign, RnaAlignment const & align, TScoreValue alignScore, int index)
 {
     if (rnaAlign.bestUpperBound - rnaAlign.bestLowerBound < rnaAlign.forMinDiff.upperBound - rnaAlign.forMinDiff.lowerBound)
     {
@@ -339,7 +338,7 @@ void saveBestAlignMinDiff(TRnaAlign & rnaAlign, TAlign const & align, TScoreValu
     }
 }
 
-void saveBestAligns(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore, int index)
+void saveBestAligns(RnaAlignmentTraits & rnaAlign, RnaAlignment const & align, TScoreValue alignScore, int index)
 {
     saveBestAlignMinDiff(rnaAlign, align, alignScore, index);
 //    saveBestAlignMinBound(rnaAlign, align, alignScore, index);
@@ -365,14 +364,14 @@ void updateLambdaLine(TValueScoreLine & maxProbScoreLine, unsigned & seqIndexInt
 // Function updateClosedLoops()
 // ----------------------------------------------------------------------------
 
-void updateClosedLoops(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
+void updateClosedLoops(RnaAlignmentTraits & rnaAlign)
 {
-    int tmpIndex = -1;
+//    int tmpIndex = -1;
     for (std::pair<unsigned, unsigned> const & line : rnaAlign.mask)
     {
         if (rnaAlign.lamb[line.first].map.count(line.second) > 0)
         {
-            lambWeightStruct &lambda = rnaAlign.lamb[line.first].map[line.second];
+            RnaInteraction &lambda = rnaAlign.lamb[line.first].map[line.second];
             if (lambda.seq1IndexPairLine ==
                 rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].seq1IndexInter
                 && lambda.seq2IndexPairLine ==
@@ -393,7 +392,7 @@ void updateClosedLoops(TRnaAlign & rnaAlign, bool const & saveFoundInterPair)
 // Function createNewLambdaLines()
 // ----------------------------------------------------------------------------
 
-void createNewLambdaLines(TRnaAlign & rnaAlign, bool const & saveFoundInterPair, unsigned const & iter)
+void createNewLambdaLines(RnaAlignmentTraits & rnaAlign, bool const & saveFoundInterPair, unsigned const & iter)
 {
     Graph<Undirected<double> > & graph1 = rnaAlign.bppGraphH.inter;
     Graph<Undirected<double> > & graph2 = rnaAlign.bppGraphV.inter;
@@ -417,7 +416,7 @@ void createNewLambdaLines(TRnaAlign & rnaAlign, bool const & saveFoundInterPair,
             rnaAlign.lamb[line.first].map[line.second].iterUpdate = iter;
             if (proceed)
             {
-                lambWeightStruct & lambda = rnaAlign.lamb[line.first].map[line.second];
+                RnaInteraction & lambda = rnaAlign.lamb[line.first].map[line.second];
                 updateLambdaLine(lambda.maxProbScoreLine1, lambda.seq1IndexInter, graph1, line.first);
                 lambda.seq1IndexPairLine = line.first;
 //            std::cerr << lambda.seq1IndexPairLine << " : " << lambda.seq1IndexInter << " | " << lambda.maxProbScoreLine1
@@ -447,7 +446,7 @@ void createNewLambdaLines(TRnaAlign & rnaAlign, bool const & saveFoundInterPair,
                     //rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].iterUpdate = iter; //TODO check if needed
                     if (proceed2)
                     {
-                        lambWeightStruct & lambdaPair = rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter];
+                        RnaInteraction & lambdaPair = rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter];
                         lambdaPair.seq1IndexPairLine = lambda.seq1IndexInter;
                         lambdaPair.seq2IndexPairLine = lambda.seq2IndexInter;
                         lambdaPair.seq1IndexInter = lambda.seq1IndexPairLine;
@@ -464,7 +463,7 @@ void createNewLambdaLines(TRnaAlign & rnaAlign, bool const & saveFoundInterPair,
         }
     }
     if(flagUpdateClosedLoops)
-        updateClosedLoops(rnaAlign, saveFoundInterPair);
+        updateClosedLoops(rnaAlign);
     std::cerr << "lambda num elements: ";
     for(unsigned i=0; i < length(rnaAlign.lamb); ++i)
         std::cerr << length(rnaAlign.lamb[i].map) << "\t";
@@ -473,20 +472,20 @@ void createNewLambdaLines(TRnaAlign & rnaAlign, bool const & saveFoundInterPair,
 }
 
 // ----------------------------------------------------------------------------
-// Function computeSlm()
+// Function computeNumberOfSubgradients()
 // ----------------------------------------------------------------------------
 
 template <typename TMask>
-void computeSlm(TRnaAlign & rnaAlign, TMask & listUnclosedLoopMask)
+void computeNumberOfSubgradients(RnaAlignmentTraits & rnaAlign, TMask & listUnclosedLoopMask)
 {
-    rnaAlign.slm = 0;
+    rnaAlign.numberOfSubgradients = 0;
     for (std::pair<unsigned, unsigned> const & line : rnaAlign.mask)
     {
         if (rnaAlign.lamb[line.first].map.count(line.second) > 0)
         {
             bool stucturalLine = false;
 /*
-            lambWeightStruct &lambdaL = rnaAlign.lamb[lineL.first].map[lineL.second];
+            RnaInteraction &lambdaL = rnaAlign.lamb[lineL.first].map[lineL.second];
 
             bool closedCircle = false;
             for (std::pair<unsigned, unsigned> const & lineM : rnaAlign.mask)
@@ -497,11 +496,11 @@ void computeSlm(TRnaAlign & rnaAlign, TMask & listUnclosedLoopMask)
             }
             if (!closedCircle)
             {
-                rnaAlign.slm += 2;
+                rnaAlign.numberOfSubgradients += 2;
                 appendValue(listUnclosedLoopMask, lineL);
             }
 */
-            lambWeightStruct & lambda = rnaAlign.lamb[line.first].map[line.second];
+            RnaInteraction & lambda = rnaAlign.lamb[line.first].map[line.second];
             if(lambda.closedLoop)
             {
                 if (lambda.iterUpdate >= 0 &&  lambda.iterUpdate == rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].iterUpdate)
@@ -523,41 +522,33 @@ void computeSlm(TRnaAlign & rnaAlign, TMask & listUnclosedLoopMask)
             }
             if(stucturalLine)
             {
-                ++rnaAlign.slm; //TODO chekc because JORG says +2
+                rnaAlign.numberOfSubgradients += 2;
                 appendValue(listUnclosedLoopMask, line);
             }
-/*
-            std::cout << line.first << " : " << line.second << " = " << lambda.maxProbScoreLine << " | ";
-            std::cout << lambda.seq1IndexInter << " : "
-                      << lambda.seq2IndexInter << " = "
-                      << rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].maxProbScoreLine
-                      << std::endl;
-            std::cout << tmpSlm << " : " << rnaAlign.slm << std::endl;
-*/
         }
     }
-    std::cerr << "slm = " << rnaAlign.slm << std::endl;
+    std::cerr << "numberOfSubgradients = " << rnaAlign.numberOfSubgradients << std::endl;
 }
 
 // ----------------------------------------------------------------------------
-// Function computeSlm()
+// Function computeNumberOfSubgradients()
 // ----------------------------------------------------------------------------
 
 template <typename TMask>
-void updateLambdaStep(TRnaAlign & rnaAlign, TMask & listUnclosedLoopMask)
+void updateLambdaStep(RnaAlignmentTraits & rnaAlign, TMask & listUnclosedLoopMask)
 {
     for (std::pair<unsigned, unsigned> const &line : listUnclosedLoopMask)
     {
         if (rnaAlign.lamb[line.first].map.count(line.second) > 0)
         {
-            lambWeightStruct & lambda = rnaAlign.lamb[line.first].map[line.second];
+            RnaInteraction & lambda = rnaAlign.lamb[line.first].map[line.second];
             if (true || lambda.seq1IndexPairLine !=
                 rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].seq1IndexInter
                 || lambda.seq2IndexPairLine !=
                    rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].seq2IndexInter)
             {
-                lambda.step -= rnaAlign.stepSize;
-                rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].step += rnaAlign.stepSize;
+                lambda.lambdaValue -= rnaAlign.stepSize;
+                rnaAlign.lamb[lambda.seq1IndexInter].map[lambda.seq2IndexInter].lambdaValue += rnaAlign.stepSize;
             }
 /*
             std::cout << line.first << " : " << line.second << " = " << lambda.maxProbScoreLine << " -> "<< lambda.step << " | ";
@@ -579,10 +570,10 @@ void updateLambdaStep(TRnaAlign & rnaAlign, TMask & listUnclosedLoopMask)
 // ----------------------------------------------------------------------------
 
 /*
-void computeUpperBoundScore(TRnaAlign & rnaAlign)
+void computeUpperBoundScore(RnaAlignmentTraits & rnaAlign)
 {
     TScoreValue sum = 0;
-    rnaAlign.slm = 0;
+    rnaAlign.numberOfSubgradients = 0;
     for (unsigned i = 0; i < length(rnaAlign.weightLineVect); ++i)
     {
         if (rnaAlign.weightLineVect[i].maxProbScoreLine > 0)
@@ -593,7 +584,7 @@ void computeUpperBoundScore(TRnaAlign & rnaAlign)
                 rnaAlign.weightLineVect[rnaAlign.weightLineVect[i].seq2IndexPairLine].seq1IndexPairLine)
             {
                 // the edges are not paired
-                ++rnaAlign.slm;
+                ++rnaAlign.numberOfSubgradients;
                 std::cerr << "*";
             }
         }
@@ -604,7 +595,7 @@ void computeUpperBoundScore(TRnaAlign & rnaAlign)
  */
 
 /*
-void updateLambdaOld(TRnaAlign & rnaAlign)  // TODO REMOVE THIS FUNCTION
+void updateLambdaOld(RnaAlignmentTraits & rnaAlign)  // TODO REMOVE THIS FUNCTION
 {
     for (size_t i = 0; i < length(rnaAlign.weightLineVect); ++i)
     {
@@ -612,7 +603,7 @@ void updateLambdaOld(TRnaAlign & rnaAlign)  // TODO REMOVE THIS FUNCTION
 
         if (ub.maxProbScoreLine > 0) { // skip if no interactions
             // get lambda struct of paired seq1 position
-            struct lambWeightStruct & lambWeight = rnaAlign.lamb[ub.seq1Index].map[i];
+            struct RnaInteraction & lambWeight = rnaAlign.lamb[ub.seq1Index].map[i];
 
             // the interaction edges are not paired
             if (ub.seq1Index != rnaAlign.weightLineVect[ub.seq2IndexPairLine].seq1IndexPairLine)

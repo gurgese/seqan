@@ -61,7 +61,7 @@ namespace myLemon {
 // Function computeLowerBound()
 // ----------------------------------------------------------------------------
 
-void computeLowerBoundScore(TMapVect & lowerBound4Lemon, TRnaAlign & rnaAlign)
+void computeLowerBoundScore(TMapVect & lowerBound4Lemon, RnaAlignmentTraits & rnaAlign)
 {
     lemon::SmartGraph lemonG;
     typedef lemon::SmartGraph::EdgeMap<TScoreValue > EdgeMap;

@@ -103,24 +103,24 @@ void computeTCoffeWeightsProportional(tcoffeePair & tcPair, RnaRecord const & rn
 //    std::cout << rnaAlign.forMinBound.bestAlign;
 //    std::cout << rnaAlign.forMinBound.bestAlignScore * options.sequenceScale << std::endl;
     tcoffeeW tcW;
-    for (int i = length(rnaAlign.forMinBound.mask) - 1; i >= 0 ; --i)
+    for (int i = length(rnaAlign.forMinBound.lines) - 1; i >= 0 ; --i)
     {
         if(length(rna1.sequence) >= length(rna2.sequence))
         {
-            tcW.ntSeqH = rnaAlign.forMinBound.mask[i].first + 1;
-            tcW.ntSeqV = rnaAlign.forMinBound.mask[i].second + 1;
+            tcW.ntSeqH = rnaAlign.forMinBound.lines[i].first + 1;
+            tcW.ntSeqV = rnaAlign.forMinBound.lines[i].second + 1;
         }
         else
         {
-            tcW.ntSeqV = rnaAlign.forMinBound.mask[i].first + 1;
-            tcW.ntSeqH = rnaAlign.forMinBound.mask[i].second + 1;
+            tcW.ntSeqV = rnaAlign.forMinBound.lines[i].first + 1;
+            tcW.ntSeqH = rnaAlign.forMinBound.lines[i].second + 1;
         }
 
-        //if(rnaAlign.forMinBound.weightLineVect[rnaAlign.forMinBound.mask[i].second].maxProbScoreLine > 0)
-        if(rnaAlign.lamb[rnaAlign.forMinBound.mask[i].first].map.count(rnaAlign.forMinBound.mask[i].second) > 0) //TODO check if this control is necessary
+        //if(rnaAlign.forMinBound.weightLineVect[rnaAlign.forMinBound.lines[i].second].weight > 0)
+        if(rnaAlign.interactions[rnaAlign.forMinBound.lines[i].first].count(rnaAlign.forMinBound.lines[i].second) > 0) //TODO check if this control is necessary
         {
-            //tcW.weight = TCOFFSET + static_cast<int>(TCMULT * rnaAlign.forMinBound.weightLineVect[rnaAlign.forMinBound.mask[i].second].maxProbScoreLine);
-            tcW.weight = TCOFFSET + static_cast<int>(TCMULT * rnaAlign.lamb[rnaAlign.forMinBound.mask[i].first].map[rnaAlign.forMinBound.mask[i].second].maxProbScoreLine);
+            //tcW.weight = TCOFFSET + static_cast<int>(TCMULT * rnaAlign.forMinBound.weightLineVect[rnaAlign.forMinBound.lines[i].second].weight);
+            tcW.weight = TCOFFSET + static_cast<int>(TCMULT * rnaAlign.interactions[rnaAlign.forMinBound.lines[i].first][rnaAlign.forMinBound.lines[i].second].weight);
         }
         else
         {
@@ -140,20 +140,20 @@ void computeTCoffeWeightsSwitch(tcoffeePair & tcPair, RnaRecord const & rna1,
 //    std::cout << rnaAlign.forMinBound.bestAlign;
 //    std::cout << rnaAlign.forMinBound.bestAlignScore * options.sequenceScale << std::endl;
     tcoffeeW tcW;
-    for(int i =  length(rnaAlign.forMinBound.mask) - 1; i >= 0 ; --i)
+    for(int i =  length(rnaAlign.forMinBound.lines) - 1; i >= 0 ; --i)
     {
         if(length(rna1.sequence) >= length(rna2.sequence))
         {
-            tcW.ntSeqH = rnaAlign.forMinBound.mask[i].first + 1;
-            tcW.ntSeqV = rnaAlign.forMinBound.mask[i].second + 1;
+            tcW.ntSeqH = rnaAlign.forMinBound.lines[i].first + 1;
+            tcW.ntSeqV = rnaAlign.forMinBound.lines[i].second + 1;
         }
         else
         {
-            tcW.ntSeqV = rnaAlign.forMinBound.mask[i].first + 1;
-            tcW.ntSeqH = rnaAlign.forMinBound.mask[i].second + 1;
+            tcW.ntSeqV = rnaAlign.forMinBound.lines[i].first + 1;
+            tcW.ntSeqH = rnaAlign.forMinBound.lines[i].second + 1;
         }
-//        if(rnaAlign.forMinBound.weightLineVect[rnaAlign.forMinBound.mask[i].second].maxProbScoreLine > 0)
-        if(rnaAlign.lamb[rnaAlign.forMinBound.mask[i].first].map.count(rnaAlign.forMinBound.mask[i].second) > 0)
+//        if(rnaAlign.forMinBound.weightLineVect[rnaAlign.forMinBound.lines[i].second].weight > 0)
+        if(rnaAlign.interactions[rnaAlign.forMinBound.lines[i].first].count(rnaAlign.forMinBound.lines[i].second) > 0)
         {
             tcW.weight = TCMAX;
         }
@@ -175,17 +175,17 @@ void computeTCoffeWeightsSeqAlignOnly(tcoffeePair & tcPair, RnaRecord const & rn
 //    std::cout << rnaAlign.forMinBound.bestAlign;
 //    std::cout << rnaAlign.forMinBound.bestAlignScore * options.sequenceScale << std::endl;
     tcoffeeW tcW;
-    for(int i =  length(rnaAlign.forMinBound.mask) - 1; i >= 0 ; --i)
+    for(int i =  length(rnaAlign.forMinBound.lines) - 1; i >= 0 ; --i)
     {
         if(length(rna1.sequence) >= length(rna2.sequence))
         {
-            tcW.ntSeqH = rnaAlign.forMinBound.mask[i].first + 1;
-            tcW.ntSeqV = rnaAlign.forMinBound.mask[i].second + 1;
+            tcW.ntSeqH = rnaAlign.forMinBound.lines[i].first + 1;
+            tcW.ntSeqV = rnaAlign.forMinBound.lines[i].second + 1;
         }
         else
         {
-            tcW.ntSeqV = rnaAlign.forMinBound.mask[i].first + 1;
-            tcW.ntSeqH = rnaAlign.forMinBound.mask[i].second + 1;
+            tcW.ntSeqV = rnaAlign.forMinBound.lines[i].first + 1;
+            tcW.ntSeqH = rnaAlign.forMinBound.lines[i].second + 1;
         }
         tcW.weight = TCOFFSET;
         tcPair.alignWeights.push_back(tcW);
@@ -230,24 +230,24 @@ void computeTCoffeWeightsAllInter(tcoffeePair & tcPair, LaraOptions const & opti
         String<bool> flagVectH, flagVectV;
         createInteractionFlags(flagVectH, rnaAlign.bppGraphH);
         createInteractionFlags(flagVectV, rnaAlign.bppGraphV);
-        for (int i = length(rnaAlign.forMinBound.mask) - 1; i >= 0; --i)
+        for (int i = length(rnaAlign.forMinBound.lines) - 1; i >= 0; --i)
         {
             if(length(rna1.sequence) >= length(rna2.sequence))
             {
-                tcW.ntSeqH = rnaAlign.forMinBound.mask[i].first + 1;
-                tcW.ntSeqV = rnaAlign.forMinBound.mask[i].second + 1;
+                tcW.ntSeqH = rnaAlign.forMinBound.lines[i].first + 1;
+                tcW.ntSeqV = rnaAlign.forMinBound.lines[i].second + 1;
             }
             else
             {
-                tcW.ntSeqV = rnaAlign.forMinBound.mask[i].first + 1;
-                tcW.ntSeqH = rnaAlign.forMinBound.mask[i].second + 1;
+                tcW.ntSeqV = rnaAlign.forMinBound.lines[i].first + 1;
+                tcW.ntSeqH = rnaAlign.forMinBound.lines[i].second + 1;
             }
-//            std::cout << "pair " << rnaAlign.forMinBound.mask[i].first + 1 << "/"
-//                      << rnaAlign.forMinBound.mask[i].second + 1 << std::endl;
-            //        if(degree(rna1.bppMatrGraphs[0].inter, rnaAlign.forMinBound.mask[i].first) > 0 && degree(rna2.bppMatrGraphs[0].inter, rnaAlign.forMinBound.mask[i].second) > 0)
-            if (flagVectH[rnaAlign.forMinBound.mask[i].first] && flagVectV[rnaAlign.forMinBound.mask[i].second])
+//            std::cout << "pair " << rnaAlign.forMinBound.lines[i].first + 1 << "/"
+//                      << rnaAlign.forMinBound.lines[i].second + 1 << std::endl;
+            //        if(degree(rna1.bppMatrGraphs[0].inter, rnaAlign.forMinBound.lines[i].first) > 0 && degree(rna2.bppMatrGraphs[0].inter, rnaAlign.forMinBound.lines[i].second) > 0)
+            if (flagVectH[rnaAlign.forMinBound.lines[i].first] && flagVectV[rnaAlign.forMinBound.lines[i].second])
 
-                //        if(rna1.fixedGraphs[0].inter[rnaAlign.forMinBound.mask[i].first] == "." || rna2.fixedGraphs[0][rnaAlign.forMinBound.mask[i].second] == ".") // VIENNA NOTATION https://www.tbi.univie.ac.at/RNA/documentation.html
+                //        if(rna1.fixedGraphs[0].inter[rnaAlign.forMinBound.lines[i].first] == "." || rna2.fixedGraphs[0][rnaAlign.forMinBound.lines[i].second] == ".") // VIENNA NOTATION https://www.tbi.univie.ac.at/RNA/documentation.html
             {
                 tcW.weight = TCOFFSET;
             }
@@ -279,19 +279,19 @@ void computeTCoffeWeightsFixedInter(tcoffeePair & tcPair, LaraOptions const & op
         String<bool> flagVectH, flagVectV;
         createInteractionFlags(flagVectH, rna1.fixedGraphs[0]);
         createInteractionFlags(flagVectV, rna2.fixedGraphs[0]);
-        for (int i = length(rnaAlign.forMinBound.mask) - 1; i >= 0; --i)
+        for (int i = length(rnaAlign.forMinBound.lines) - 1; i >= 0; --i)
         {
             if(length(rna1.sequence) >= length(rna2.sequence))
             {
-                tcW.ntSeqH = rnaAlign.forMinBound.mask[i].first + 1;
-                tcW.ntSeqV = rnaAlign.forMinBound.mask[i].second + 1;
+                tcW.ntSeqH = rnaAlign.forMinBound.lines[i].first + 1;
+                tcW.ntSeqV = rnaAlign.forMinBound.lines[i].second + 1;
             }
             else
             {
-                tcW.ntSeqV = rnaAlign.forMinBound.mask[i].first + 1;
-                tcW.ntSeqH = rnaAlign.forMinBound.mask[i].second + 1;
+                tcW.ntSeqV = rnaAlign.forMinBound.lines[i].first + 1;
+                tcW.ntSeqH = rnaAlign.forMinBound.lines[i].second + 1;
             }
-            if (flagVectH[rnaAlign.forMinBound.mask[i].first] && flagVectV[rnaAlign.forMinBound.mask[i].second])
+            if (flagVectH[rnaAlign.forMinBound.lines[i].first] && flagVectV[rnaAlign.forMinBound.lines[i].second])
             {
                 tcW.weight = TCOFFSET;
             }

@@ -104,41 +104,40 @@ void readRnaFile(RnaStructContents & filecontents, CharString filename, LaraOpti
 // Function plotOutput()
 // ----------------------------------------------------------------------------
 
-void plotOutput(LaraOptions const & options, RnaAlignmentTraitsVector & rnaAligns)
+void plotAlignments(LaraOptions const & options, RnaAlignmentTraitsVector & alignmentTraits)
 {
-    for (RnaAlignmentTraits const & ali : rnaAligns)
-    //for (unsigned i = 0; i < length(rnaAligns); ++i)
+    for (RnaAlignmentTraits const & traits : alignmentTraits)
     {
 /*
         _VV(options, "******* For Minimum Stepsize *******" << std::endl);
-        _VV(options, "Alignment of sequences " << rnaAligns[i].idBppSeqH << ":" << rnaAligns[i].idBppSeqV);
-        _VV(options, "Iteration where MinStepSize has been found " << rnaAligns[i].forMinBound.it);
-        _VV(options, "Best Lower bound is " << rnaAligns[i].forMinBound.lowerBound);
-        _VV(options, "Best Upper bound is " << rnaAligns[i].forMinBound.upperBound);
-        _VV(options, "Minimum step size is " << rnaAligns[i].forMinBound.stepSizeBound);
-        _VV(options, "Best alignment based on the Min Bounds is " << rnaAligns[i].forMinBound.bestAlignScore << "\n"
-                                                                  <<  rnaAligns[i].forMinBound.bestAlign);
+        _VV(options, "Alignment of sequences " << traits.idBppSeqH << ":" << traits.idBppSeqV);
+        _VV(options, "Iteration where MinStepSize has been found " << traits.forMinBound.it);
+        _VV(options, "Best Lower bound is " << traits.forMinBound.lowerBound);
+        _VV(options, "Best Upper bound is " << traits.forMinBound.upperBound);
+        _VV(options, "Minimum step size is " << traits.forMinBound.stepSizeBound);
+        _VV(options, "Best alignment based on the Min Bounds is " << traits.forMinBound.bestAlignScore << "\n"
+                                                                  <<  traits.forMinBound.bestAlign);
 
-        _VV(options, "The step size to be used for Lambda at last iteration is " << rnaAligns[i].stepSize << "\n");
+        _VV(options, "The step size to be used for Lambda at last iteration is " << traits.stepSize << "\n");
 
         _VV(options, "+++++++ For Maximum Alignment Score +++++++" << std::endl);
-        _VV(options, "Alignment of sequences " << rnaAligns[i].idBppSeqH << ":" << rnaAligns[i].idBppSeqV);
-        _VV(options, "Iteration where best score has been found " << rnaAligns[i].forScore.it);
-        _VV(options, "Best Lower bound is " << rnaAligns[i].forScore.lowerBound);
-        _VV(options, "Best Upper bound is " << rnaAligns[i].forScore.upperBound);
-        _VV(options, "Minimum step size is " << rnaAligns[i].forScore.stepSizeBound);
-        _VV(options, "The step size to be used for Lambda at last iteration is " << rnaAligns[i].stepSize << "\n");
-        _VV(options, "Best alignment based on the Score is " << rnaAligns[i].forScore.bestAlignScore << "\n"
-                                                             << rnaAligns[i].forScore.bestAlign);
+        _VV(options, "Alignment of sequences " << traits.idBppSeqH << ":" << traits.idBppSeqV);
+        _VV(options, "Iteration where best score has been found " << traits.forScore.it);
+        _VV(options, "Best Lower bound is " << traits.forScore.lowerBound);
+        _VV(options, "Best Upper bound is " << traits.forScore.upperBound);
+        _VV(options, "Minimum step size is " << traits.forScore.stepSizeBound);
+        _VV(options, "The step size to be used for Lambda at last iteration is " << traits.stepSize << "\n");
+        _VV(options, "Best alignment based on the Score is " << traits.forScore.bestAlignScore << "\n"
+                                                             << traits.forScore.bestAlign);
  */
         _VV(options, "******* For Closest Bounds *******" << std::endl);
-        _VV(options, "Alignment of sequences " << ali.idBppSeqH << ":" << ali.idBppSeqV);
-        _VV(options, "Iteration where the closest bounds have been found " << ali.forMinDiff.it);
-        _VV(options, "Best Lower bound is " << ali.forMinDiff.lowerBound);
-        _VV(options, "Best Upper bound is " << ali.forMinDiff.upperBound);
-        _VV(options, "Minimum step size is " << ali.forMinDiff.stepSizeBound);
-        _VV(options, "Best alignment based on the the closest Bounds is " << ali.forMinDiff.bestAlignScore << "\n"
-                                                                          << ali.forMinDiff.bestAlign);
+        _VV(options, "Alignment of sequences " << traits.idBppSeqH << ":" << traits.idBppSeqV);
+        _VV(options, "Iteration where the closest bounds have been found " << traits.forMinDiff.it);
+        _VV(options, "Best Lower bound is " << traits.forMinDiff.lowerBound);
+        _VV(options, "Best Upper bound is " << traits.forMinDiff.upperBound);
+        _VV(options, "Minimum step size is " << traits.forMinDiff.stepSizeBound);
+        _VV(options, "Best alignment based on the the closest Bounds is " << traits.forMinDiff.bestAlignScore << "\n"
+                                                                          << traits.forMinDiff.bestAlign);
     }
 }
 

@@ -194,7 +194,7 @@ struct LaraOptions
             tcoffeLibMode(SWITCH),
             splitSequence(1),
             windowSize(100),
-            timeLimit(-1),
+            timeLimit(std::numeric_limits<unsigned>::max()),
             verbose(0)
     {
 #ifdef _OPENMP

@@ -121,189 +121,183 @@ int main (int argc, char const ** argv)
     _VVV(options, getEbpseqString(filecontents.first) << getEbpseqString(filecontents.second));
 
 
-    // A StringSet of SeqAn-style alignments is created
+    // A StringSet of SeqAn-style alignments and a vector of alignment traits are created.
     StringSet<RnaAlignment> alignments;
-    RnaAlignmentTraitsVector aliTraitsVect;
-    prepareAlignmentVector(alignments, aliTraitsVect, filecontents);
+    RnaAlignmentTraitsVector alignmentTraits;
+    prepareAlignmentVector(alignments, alignmentTraits, filecontents);
     _VV(options, "Number of pairwise alignments to be computed: " << length(alignments));
+
+    // Initialise the alignment traits.
+    for (RnaAlignmentTraits & traits : alignmentTraits)
+    {
+        // The lambda structs are referenced by the index of the first sequence.
+        resize(traits.interactions, numVertices(traits.bppGraphH.inter));
+        // Allocate capacity for lines: the length of the shorter sequence is the maximum number of expressed lines.
+        reserve(traits.lines, std::min(numVertices(traits.bppGraphH.inter), numVertices(traits.bppGraphV.inter)));
+
+        traits.structureScore.matrix = options.laraScoreMatrix;
+        traits.structureScore.interactions = & traits.interactions;
+        traits.stepSizeScaling = options.my;
+    }
+
+    // Create the alignment data structure that will host the alignments with small difference between bounds.
+    // Move all finished alignments to optimalAlignTraits, such that they are not further processed.
+    RnaAlignmentTraitsVector optimalAlignTraits;
 
     // Bitvector that expresses whether an alignment is finished (i.e. bound difference is very small)
     std::vector<bool> isOptimal;
     isOptimal.resize(length(alignments), false);
 
-    for (RnaAlignmentTraits & traits : aliTraitsVect)
+    // Calculate the initial alignment scores.
+    String<double> upperBoundScores;
+    initialAlignment(upperBoundScores, alignments, options);
+    _VV(options, "\ninitial sequence alignment (score " << upperBoundScores[0] << "):\n" << alignments[0]);
+
+    // Evaluate the lines and interactions.
+    for (unsigned idx = 0u; idx < length(alignments); ++idx)
     {
-        // The lambda structs are referenced by the index of the first sequence.
-        resize(traits.lamb, numVertices(traits.bppGraphH.inter));
-        // Allocate capacity for mask: the length of the shorter sequence is the maximum number of expressed lines.
-        reserve(traits.mask, std::min(numVertices(traits.bppGraphH.inter), numVertices(traits.bppGraphV.inter)));
-
-        traits.structScore.score_matrix = options.laraScoreMatrix;
-        traits.structScore.lamb = & traits.lamb;
-        traits.stepSizeScaling = options.my;
+        evaluateLines(alignmentTraits[idx], alignments[idx], options);
+        evaluateInteractions(alignmentTraits[idx], 0u);
     }
-
-    // Create the alignment data structure that will host the alignments with small difference between bounds
-    // Move all finished alignments to goldRnaAligns, such that they are not further processed
-    RnaAlignmentTraitsVector goldRnaAligns;
-
-    // Receives the alignment scores
-    String<TScoreValue> resultsSimd;
-
-    firstSimdAlignsGlobalLocal(resultsSimd, alignments, options);
-    _VV(options, "\ninitial sequence alignment (score " << resultsSimd[0] << "):\n" << alignments[0]);
-
-    for (unsigned i = 0; i < length(alignments); ++i)
-    {
-        RnaAlignmentTraits & traits = aliTraitsVect[i];
-        createMask(traits, alignments[i], options);
-        createNewLambdaLines(traits, options.useOppositLineUB, 0);
-    }
-
 
     // ITERATIONS OF ALIGNMENT AND MWM
-    for (unsigned iter = 0; iter < options.iterations && length(alignments) > 0; ++iter)
+    for (unsigned iter = 0u; iter < options.iterations && length(alignments) > 0u; ++iter)
     {
         bool foundAnOptimalAlignment = false;
-        simdAlignsGlobalLocal(resultsSimd, alignments, aliTraitsVect, options);
-        _VV(options, "\nalignment in iteration " << iter << " (score " << resultsSimd[0] << "):\n" << alignments[0]);
+        structuralAlignment(upperBoundScores, alignments, alignmentTraits, options);
+        _VV(options, "\nalignment in iteration " << iter << " (score " << upperBoundScores[0] << "):\n"
+                                                 << alignments[0]);
 
         //#pragma omp parallel for num_threads(options.threads)
-        for (unsigned i = 0; i < length(alignments); ++i)
+        for (unsigned idx = 0; idx < length(alignments); ++idx)
         {
-            RnaAlignmentTraits & traits = aliTraitsVect[i];
-            bool changedMask = createMask(traits, alignments[i], options);
+            RnaAlignmentTraits & traits = alignmentTraits[idx];
+            bool const changedLines = evaluateLines(traits, alignments[idx], options);
 
-            traits.upperBound = resultsSimd[i];
+            // Set upper bound (i.e. the relaxed solution = Lagrangian dual).
+            traits.upperBound = upperBoundScores[idx];
             traits.bestUpperBound = std::min(traits.bestUpperBound, traits.upperBound);
-//            std::cerr << "Saved Upper Bound (alignment Score)" << std::endl;
 
-            if (changedMask || i == 0)
+            // If lines have changed the lower bound must be calculated.
+            if (changedLines || iter == 0)
             {
+                evaluateInteractions(traits, iter);
 
-                createNewLambdaLines(traits, options.useOppositLineUB, iter);
-//                std::cerr << "Included in Lambda vector the new alignment lines" << std::endl;
-
-                // The MWM is computed to fill the LowerBound
+                // The lower bound is calculated using Maximum Weighted Matching among the valid interactions.
                 if (options.lowerBoundMethod == LBLEMONMWM) {
-                    TMapVect lowerBound4Lemon;
-                    lowerBound4Lemon.resize(numVertices(traits.bppGraphH.inter)); //TODO check this
-                    //std::cout << alignments[i] << std::endl;
-                    computeLowerBound(traits, & lowerBound4Lemon);
-//                computeBounds(traits, & lowerBound4Lemon); // weightLineVect receives seq indices of best pairing
-//                computeUpperBoundScore(traits); // upperBound = sum of all probability lines
-                    myLemon::computeLowerBoundScore(lowerBound4Lemon, traits);
-                    traits.lowerBound = traits.lowerLemonBound.mwmPrimal + traits.sequenceScore;
-                    // traits.slm = traits.slm - (traits.lowerLemonBound.mwmCardinality * 2);
-                    _VV(options, "Computed maximum weighted matching using the LEMON library.");
-                    traits.bestLowerBound = std::max(traits.bestLowerBound, traits.lowerBound);
+                    InteractionScoreMap validInteractionScores;
+                    // The scores are referenced by the index of the first sequence.
+                    validInteractionScores.resize(numVertices(traits.bppGraphH.inter));
+                    prepareLowerBoundScores(validInteractionScores, traits);
+                    traits.lowerBound = myLemon::computeLowerBoundScore(validInteractionScores) + traits.sequenceScore;
                 }
                 else if (options.lowerBoundMethod == LBAPPROXMWM)
                 {   // TODO Verify the procedure! Approximation of MWM is computed to fill the LowerBound
-//                    computeBounds(traits, NULL);  // TODO verify this call and reimplement the approximation if better than gready
-                    //TODO rewrite this function without weightLineVect
-                } else if (options.lowerBoundMethod == LBLINEARTIMEMWM) // TODO Verify the procedure! using greedy algorithm
+                    // computeBounds(traits, NULL);
+                    // TODO verify this call and reimplement the approximation if better than gready
+                    // TODO rewrite this function without weightLineVect
+                } else if (options.lowerBoundMethod == LBLINEARTIMEMWM)
                 {
-                    TMapVect lowerBound4Lemon;
-                    lowerBound4Lemon.resize(length(traits.mask));
-//                    computeBounds(traits, &lowerBound4Lemon); //TODO rewrite this function without weightLineVect
-                    computeLowerBoundGreedy(lowerBound4Lemon, traits);
-                    traits.lowerBound = traits.lowerGreedyBound;
+                    // TODO Verify the procedure! using greedy algorithm
+                    InteractionScoreMap validInteractionScores;
+                    validInteractionScores.resize(length(traits.lines));
+//                  computeBounds(traits, &validInteractionScores); //TODO rewrite this function without weightLineVect
+                    computeLowerBoundGreedy(validInteractionScores, traits);
                     // traits.slm = traits.slm - (traits.lowerLemonBound.mwmCardinality * 2);
                 }
             }
-            _VV(options,"best l/u bounds: " << traits.bestLowerBound << " / " << traits.bestUpperBound);
 
-            if ((traits.bestUpperBound - traits.bestLowerBound < options.epsilon))
+            traits.bestLowerBound = std::max(traits.bestLowerBound, traits.lowerBound);
+            _VV(options,"best l/u bounds: " << traits.bestLowerBound << " / " << traits.bestUpperBound);
+            SEQAN_ASSERT_LEQ(traits.bestLowerBound, traits.bestUpperBound);
+
+            if (traits.bestUpperBound - traits.bestLowerBound < options.epsilon)
             {
-                // alignment is finished
-                isOptimal[i] = true;
+                // This alignment is already optimal.
+                isOptimal[idx] = true;
                 foundAnOptimalAlignment = true;
-                _VV(options, "Computation for alignment " << i << " stops in iteration "
+                _VV(options, "Computation for alignment " << idx << " stops in iteration "
                                                           << iter << " and the bestAlignMinBounds is returned.");
             }
             else
             {
-                seqan::String<std::pair <unsigned, unsigned> > listUnclosedLoopMask;
-                // Compute slm factor
-                computeNumberOfSubgradients(traits, listUnclosedLoopMask);
+                // Compute the number of active subgradients (s_lm).
+                seqan::String<PositionPair> unclosedLoops;
+                computeNumberOfSubgradients(traits, unclosedLoops);
 
-                // save previous step size
-                double const prev_stepSize = traits.stepSize;
-                //  Compute the step size for the Lambda update
+                //  Compute the step size for the subgradient update.
+                double const previousStepSize = traits.stepSize;
                 if (traits.numberOfSubgradients > 0)
-                    traits.stepSize = traits.stepSizeScaling * ((traits.bestUpperBound - traits.bestLowerBound) / traits.numberOfSubgradients);
+                    traits.stepSize = traits.stepSizeScaling * ((traits.bestUpperBound - traits.bestLowerBound)
+                                                                / traits.numberOfSubgradients);
                 else
                     traits.stepSize = 0;
 
-
                 //  Check the number of non decreasing iterations
-                if (prev_stepSize <= traits.stepSize)
+                if (previousStepSize <= traits.stepSize)
                 {
                     ++traits.nonDecreasingIterations;
-                    _VV(options, "nonDecreasingIterations = " << traits.nonDecreasingIterations);
+                    _VVV(options, "nonDecreasingIterations = " << traits.nonDecreasingIterations);
                 }
                 else
                 {
-                    //TODO evaluate if the reset of this value is the right strategy wrt. the decremental solution
                     traits.nonDecreasingIterations = 0u;
                 }
 
-                // there was nothing going on in the last couple of iterations, half traits.stepSizeScaling therefore
+                // There was no improvement in the last couple of iterations, therefore half traits.stepSizeScaling.
                 if (traits.nonDecreasingIterations >= options.nonDecreasingIterations)
                 {
                     // this value in case of decreasing stepsize
                     // (an opposite mechanism or a stepSizeScaling reset should be designed for this purpose)
-                    traits.stepSizeScaling /= 2; //TODO check if there is the necessity to multiply or reset
+                    traits.stepSizeScaling /= 2;
                     traits.nonDecreasingIterations = 0u;
-                    _VV(options, "Previous iterations had no improvement. Set MY parameter to " << traits.stepSizeScaling);
+                    _VV(options, "Previous iterations had no improvement. " << "Set step size scaling parameter to "
+                                                                            << traits.stepSizeScaling);
                 }
 
-                if (prev_stepSize != traits.stepSize)
-                    _VV(options, "The new step size for alignment " << i << " is " << traits.stepSize);
-
-                // Update Lambda Steps using gamma of the new lines
-                updateLambdaStep(traits, listUnclosedLoopMask);
+                // Update subgradients using the new unclosed interactions.
+                updateLambdaValues(traits, unclosedLoops);
             }
-            saveBestAligns(traits, alignments[i], resultsSimd[i], iter);
+            saveBestAligns(traits, alignments[idx], upperBoundScores[idx], iter);
         }
 
         if (foundAnOptimalAlignment)
         {
-            for (std::size_t i = isOptimal.size(); i > 0; --i)
+            for (std::size_t idx = isOptimal.size(); idx > 0; --idx)
             {
-                if (isOptimal[i - 1])
+                if (isOptimal[idx - 1])
                 {
-                    goldRnaAligns.push_back(aliTraitsVect[i - 1]);
-                    aliTraitsVect.erase(aliTraitsVect.begin() + i - 1);
-                    erase(alignments, i - 1);
-                    erase(resultsSimd, i - 1);
-                    isOptimal.erase(isOptimal.begin() + i - 1);
+                    optimalAlignTraits.push_back(alignmentTraits[idx - 1]);
+                    alignmentTraits.erase(alignmentTraits.begin() + idx - 1);
+                    erase(alignments, idx - 1);
+                    erase(upperBoundScores, idx - 1);
+                    isOptimal.erase(isOptimal.begin() + idx - 1);
                 }
             }
         }
+        // Progress bar.
         if (options.verbose == 1) std::cerr << "|";
     }
 
     if (options.verbose > 0) std::cerr << std::endl;
 
-    if (!empty(aliTraitsVect))
+    if (!empty(alignmentTraits))
     {
-        _VV(options, "Plot of the aliTraitsVect structure " << std::endl);
-        plotOutput(options, aliTraitsVect);
+        _VV(options, "Plot of the alignmentTraits structure " << std::endl);
+        plotAlignments(options, alignmentTraits);
     }
 
-    if (!empty(goldRnaAligns))
+    if (!empty(optimalAlignTraits))
     {
-        _VV(options, "Plot of the goldRnaAligns structure " << std::endl);
-        plotOutput(options, goldRnaAligns);
+        _VV(options, "Plot of the optimalAlignTraits structure " << std::endl);
+        plotAlignments(options, optimalAlignTraits);
     }
 
-    aliTraitsVect.insert(aliTraitsVect.end(), goldRnaAligns.begin(), goldRnaAligns.end());
+    alignmentTraits.insert(alignmentTraits.end(), optimalAlignTraits.begin(), optimalAlignTraits.end());
 
-    if(!empty(aliTraitsVect)) // This is a multiple alignment an the T-Coffee library must be printed
+    if(!empty(alignmentTraits)) // This is a multiple alignment an the T-Coffee library must be printed
     {
-        createTCoffeeLib(options, filecontents, aliTraitsVect);
+        createTCoffeeLib(options, filecontents, alignmentTraits);
     }
     return 0;
 }

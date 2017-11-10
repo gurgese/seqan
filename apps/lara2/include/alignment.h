@@ -48,7 +48,7 @@
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// Function bppInteractionGraphBuild()
+// Function computeMissingInteractions()
 // ----------------------------------------------------------------------------
 
 void computeMissingInteractions(TRnaVect & rnaRecordVector, LaraOptions const & options)
@@ -95,7 +95,7 @@ void setScoreMatrix(LaraOptions & options)
 }
 
 // ----------------------------------------------------------------------------
-// Function firstSimdAlignsGlobalLocal()
+// Function initialAlignment()
 // ----------------------------------------------------------------------------
 
 void initialAlignment(String<double> & results, StringSet<RnaAlignment> & alignments, LaraOptions const & options)
@@ -126,7 +126,7 @@ void initialAlignment(String<double> & results, StringSet<RnaAlignment> & alignm
 };
 
 // ----------------------------------------------------------------------------
-// Function simdAlignsGlobalLocal()
+// Function structuralAlignment()
 // ----------------------------------------------------------------------------
 //TODO modify this function in order to implement the SIMD alignment
 void structuralAlignment(String<double> & results, StringSet<RnaAlignment> & alignments,
@@ -214,8 +214,8 @@ void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector &
         for (TRnaVect::iterator it2 = it1 + 1u; it2 != seqs.end(); ++it2)
         {
             _fillVectors(setH, setV, alignInfo, it1, it2);
-            alignmentTraits[p].idBppSeqH = static_cast<unsigned>(std::distance(seqs.begin(), it1));
-            alignmentTraits[p].idBppSeqV = static_cast<unsigned>(std::distance(seqs.begin(), it2));
+            alignmentTraits[p].sequenceIndices.first  = std::distance(seqs.begin(), it1);
+            alignmentTraits[p].sequenceIndices.second = std::distance(seqs.begin(), it2);
             ++p;
         }
     }
@@ -241,8 +241,8 @@ void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector &
             for (TRnaVect::iterator it2 = seqs2.begin(); it2 != seqs2.end(); ++it2)
             {
                 _fillVectors(setH, setV, alignInfo, it1, it2);
-                alignmentTraits[p].idBppSeqH = std::distance(seqs1.begin(), it1);
-                alignmentTraits[p].idBppSeqV = std::distance(seqs2.begin(), it2);
+                alignmentTraits[p].sequenceIndices.first = std::distance(seqs1.begin(), it1);
+                alignmentTraits[p].sequenceIndices.second = std::distance(seqs2.begin(), it2);
                 ++p;
             }
         }

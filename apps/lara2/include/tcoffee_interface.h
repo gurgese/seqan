@@ -347,11 +347,11 @@ int computeTCoffeWeights(TTCoffeeLib & tcLib, LaraOptions const & options,
     for(unsigned i = 0; i < rnaAligns.size(); ++i)
     {
         tcoffeePair tcPair;
-        tcPair.idSeqH = rnaAligns[i].idBppSeqH + 1;
-        tcPair.idSeqV = filecontents.first.records.size() + rnaAligns[i].idBppSeqV + 1;
+        tcPair.idSeqH = rnaAligns[i].sequenceIndices.first + 1;
+        tcPair.idSeqV = filecontents.first.records.size() + rnaAligns[i].sequenceIndices.second + 1;
 //        if(rnaAligns[i].forMinBound.upperBound > 0)
-        computeTCoffeWeightsMethodSel(tcPair, options, filecontents.first.records[rnaAligns[i].idBppSeqH],
-                                          filecontents.second.records[rnaAligns[i].idBppSeqV], rnaAligns[i]);
+        computeTCoffeWeightsMethodSel(tcPair, options, filecontents.first.records[rnaAligns[i].sequenceIndices.first],
+                                      filecontents.second.records[rnaAligns[i].sequenceIndices.second], rnaAligns[i]);
         tcLib.rnaPairs.push_back(tcPair);
     }
     return 0;
@@ -368,12 +368,12 @@ int computeTCoffeWeights(TTCoffeeLib & tcLib, LaraOptions const & options, RnaSt
     for(unsigned i = 0; i < rnaAligns.size(); ++i)
     {
         tcoffeePair tcPair;
-        tcPair.idSeqH = rnaAligns[i].idBppSeqH + 1;
-        tcPair.idSeqV = rnaAligns[i].idBppSeqV + 1;
+        tcPair.idSeqH = rnaAligns[i].sequenceIndices.first + 1;
+        tcPair.idSeqV = rnaAligns[i].sequenceIndices.second + 1;
 //        std::cout << tcPair.idSeqH << " " << tcPair.idSeqV << std::endl;
 //        if(rnaAligns[i].forMinBound.upperBound > 0)
-        computeTCoffeWeightsMethodSel(tcPair, options, filecontents1.records[rnaAligns[i].idBppSeqH],
-                       filecontents1.records[rnaAligns[i].idBppSeqV], rnaAligns[i]);
+        computeTCoffeWeightsMethodSel(tcPair, options, filecontents1.records[rnaAligns[i].sequenceIndices.first],
+                       filecontents1.records[rnaAligns[i].sequenceIndices.second], rnaAligns[i]);
 
         tcLib.rnaPairs.push_back(tcPair);
     }

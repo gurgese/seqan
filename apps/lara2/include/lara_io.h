@@ -131,7 +131,7 @@ void plotAlignments(LaraOptions const & options, RnaAlignmentTraitsVector & alig
                                                              << traits.forScore.bestAlign);
  */
         _VV(options, "******* For Closest Bounds *******" << std::endl);
-        _VV(options, "Alignment of sequences " << traits.idBppSeqH << ":" << traits.idBppSeqV);
+        _VV(options, "Alignment of sequences " << traits.sequenceIndices.first << ":" << traits.sequenceIndices.second);
         _VV(options, "Iteration where the closest bounds have been found " << traits.forMinDiff.it);
         _VV(options, "Best Lower bound is " << traits.forMinDiff.lowerBound);
         _VV(options, "Best Upper bound is " << traits.forMinDiff.upperBound);

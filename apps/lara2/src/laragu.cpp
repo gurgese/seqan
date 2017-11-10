@@ -183,28 +183,23 @@ int main (int argc, char const ** argv)
             {
                 evaluateInteractions(traits, iter);
 
-                // The lower bound is calculated using Maximum Weighted Matching among the valid interactions.
-                if (options.lowerBoundMethod == LBLEMONMWM) {
-                    InteractionScoreMap validInteractionScores;
-                    // The scores are referenced by the index of the first sequence.
-                    validInteractionScores.resize(numVertices(traits.bppGraphH.inter));
-                    prepareLowerBoundScores(validInteractionScores, traits);
-                    traits.lowerBound = myLemon::computeLowerBoundScore(validInteractionScores) + traits.sequenceScore;
-                }
-                else if (options.lowerBoundMethod == LBAPPROXMWM)
-                {   // TODO Verify the procedure! Approximation of MWM is computed to fill the LowerBound
-                    // computeBounds(traits, NULL);
-                    // TODO verify this call and reimplement the approximation if better than gready
-                    // TODO rewrite this function without weightLineVect
-                } else if (options.lowerBoundMethod == LBLINEARTIMEMWM)
+                InteractionScoreMap validInteractionScores;
+                // The scores are referenced by the index of the first sequence.
+                validInteractionScores.resize(numVertices(traits.bppGraphH.inter));
+                prepareLowerBoundScores(validInteractionScores, traits);
+
+                switch (options.lowerBoundMethod)
                 {
-                    // TODO Verify the procedure! using greedy algorithm
-                    InteractionScoreMap validInteractionScores;
-                    validInteractionScores.resize(length(traits.lines));
-//                  computeBounds(traits, &validInteractionScores); //TODO rewrite this function without weightLineVect
-                    computeLowerBoundGreedy(validInteractionScores, traits);
-                    // traits.slm = traits.slm - (traits.lowerLemonBound.mwmCardinality * 2);
+                    case MWM_LEMON:  traits.lowerBound = myLemon::computeLowerBoundScore(validInteractionScores);
+                                     break;
+                    case MWM_GREEDY: traits.lowerBound = computeLowerBoundGreedy(validInteractionScores);
+                                     break;
+                    case MWM_SIMPLE: // computeBounds(traits, NULL);
+                    default:         std::cerr << "Lower Bound method not implemented." << std::endl;
+                                     exit(1);
                 }
+
+                traits.lowerBound += traits.sequenceScore;
             }
 
             traits.bestLowerBound = std::max(traits.bestLowerBound, traits.lowerBound);
@@ -295,7 +290,7 @@ int main (int argc, char const ** argv)
 
     alignmentTraits.insert(alignmentTraits.end(), optimalAlignTraits.begin(), optimalAlignTraits.end());
 
-    if(!empty(alignmentTraits)) // This is a multiple alignment an the T-Coffee library must be printed
+    if (!empty(alignmentTraits)) // This is a multiple alignment an the T-Coffee library must be printed
     {
         createTCoffeeLib(options, filecontents, alignmentTraits);
     }

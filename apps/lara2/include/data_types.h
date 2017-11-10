@@ -59,14 +59,6 @@
 // Prerequisites
 // ============================================================================
 
-enum LaraFileType
-{
-    FASTA,
-    FASTQ,
-    RNASTRUCT,
-    UNKNOWN
-};
-
 enum LaraScore
 {
     LOGARITHMIC,
@@ -85,9 +77,10 @@ enum LaraTCoffeeLibMode
 
 enum LaraMwmMethod
 {
-    LBLEMONMWM,
-    LBAPPROXMWM,
-    LBLINEARTIMEMWM
+    MWM_LEMON,
+    MWM_GREEDY,
+    MWM_SIMPLE
+
 };
 
 //Values used for T-Coffee lib preparation
@@ -117,7 +110,7 @@ typedef StringSet<Rna5String, Dependent<Generous> > RnaSeqSet;
 typedef std::pair<RnaStructContents, RnaStructContents> RnaStructContentsPair;
 typedef std::pair<unsigned, unsigned> PositionPair;
 
-typedef seqan::Graph<seqan::Undirected<double> > TLowerBoundGraph;
+typedef seqan::Graph<seqan::Undirected<double> > RnaInteractionGraph;
 
 // lambda value for subgradient optimization, initialized with 0
 struct RnaInteraction
@@ -155,8 +148,7 @@ struct RnaAlignmentTraits
 {
     seqan::RnaStructureGraph bppGraphH;
     seqan::RnaStructureGraph bppGraphV;
-    unsigned idBppSeqH{};
-    unsigned idBppSeqV{};
+    std::pair<long, long> sequenceIndices{};
 
     // Mask that represents the matches from the computed alignment
     seqan::String<PositionPair> lines;
@@ -189,7 +181,7 @@ struct RnaAlignmentTraits
     //  Status when the minimum difference between the two bounds is detected
     TBestAlign forMinBound;
     TBestAlign forMinDiff;
-    TBestAlign forScore;
+//    TBestAlign forScore;
 
     // String with size seq1 storing all the aligned lines
     OutgoingInteractions interactions;

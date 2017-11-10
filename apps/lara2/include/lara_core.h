@@ -151,8 +151,8 @@ bool evaluateLines(RnaAlignmentTraits & traits, RnaAlignment const & align, Lara
 
 void prepareLowerBoundScores(InteractionScoreMap & validInteractions, RnaAlignmentTraits const & traits)
 {
-    Graph<Undirected<double> > const & graph1 = traits.bppGraphH.inter;
-    Graph<Undirected<double> > const & graph2 = traits.bppGraphV.inter;
+    RnaInteractionGraph const & graph1 = traits.bppGraphH.inter;
+    RnaInteractionGraph const & graph2 = traits.bppGraphV.inter;
     // iterate all lines that are present in the alignment
 //    for (PositionPair const & line : traits.lines)
     //std::cout << graph1 << std::endl;
@@ -267,25 +267,24 @@ void computeBounds(RnaAlignmentTraits & traits, InteractionScoreMap * validInter
 }
 */
 
-// TODO to be updated and verified
-void computeLowerBoundGreedy(InteractionScoreMap & interactions, RnaAlignmentTraits & traits)
+double computeLowerBoundGreedy(InteractionScoreMap & interactions)
 {
-    TLowerBoundGraph graph;
-
     // add vertices
+    RnaInteractionGraph graph;
     forEach(interactions, [&graph] (TMap const &) { addVertex(graph); });
 
     // add edges
     for (unsigned vertexIdx = 0; vertexIdx < length(interactions); ++vertexIdx)
-        for (auto edgeCargo = interactions[vertexIdx].begin(); edgeCargo != interactions[vertexIdx].end(); ++edgeCargo)
-            addEdge(graph, vertexIdx, edgeCargo->first, edgeCargo->second);
+        for (TMap::iterator mapIt = interactions[vertexIdx].begin(); mapIt != interactions[vertexIdx].end(); ++mapIt)
+            addEdge(graph, vertexIdx, mapIt->first, mapIt->second);
 
-    traits.lowerBound = maximumWeightedMatchingGreedy<5>(graph);
+    return maximumWeightedMatchingGreedy<5>(graph);
 };
 
 // ----------------------------------------------------------------------------
 // Function saveBestAlignMinBound()
 // ----------------------------------------------------------------------------
+
 
 void saveBestAlignMinBound(RnaAlignmentTraits & traits, RnaAlignment const & align, double alignScore, unsigned index)
 {
@@ -307,7 +306,7 @@ void saveBestAlignMinBound(RnaAlignmentTraits & traits, RnaAlignment const & ali
 // ----------------------------------------------------------------------------
 // Function saveBestAlignScore()
 // ----------------------------------------------------------------------------
-
+/*
 void saveBestAlignScore(RnaAlignmentTraits & traits, RnaAlignment const & align, double alignScore, int index)
 {
 //    if ((traits.upperBound - traits.lowerBound) < (traits.upperMinBound - traits.lowerMinBound))
@@ -324,6 +323,7 @@ void saveBestAlignScore(RnaAlignmentTraits & traits, RnaAlignment const & align,
         traits.forScore.lines = traits.lines;
     }
 }
+ */
 
 void saveBestAlignMinDiff(RnaAlignmentTraits & traits, RnaAlignment const & align, double alignScore, int index)
 {
@@ -347,17 +347,15 @@ void saveBestAligns(RnaAlignmentTraits & traits, RnaAlignment const & align, dou
 //    saveBestAlignScore(traits, align, alignScore, index);
 }
 
-template <typename TValueScoreLine>
-void updateLambdaLine(TValueScoreLine & maxWeight, unsigned & seqIndexInter, Graph<Undirected<double> > const & graph, unsigned const & position)
+void findMaxWeight(double & maxWeight, unsigned & partnerIndex, RnaInteractionGraph const & graph, unsigned position)
 {
     for (RnaAdjacencyIterator adj_it(graph, position); !atEnd(adj_it); goNext(adj_it))
     {
         double edgeWeight = cargo(findEdge(graph, position, value(adj_it)));
-//        std::cout << line.first << " : " << value(adj_it1) << " \ " << edgeWeight << " - " << line.second << std::endl;
-        if(maxWeight < edgeWeight)
+        if (maxWeight < edgeWeight)
         {
             maxWeight = edgeWeight;
-            seqIndexInter = value(adj_it);
+            partnerIndex = value(adj_it);
         }
     }
 }
@@ -419,11 +417,11 @@ void evaluateInteractions(RnaAlignmentTraits & traits, unsigned const & iter)
             if (proceed)
             {
                 RnaInteraction & interaction = traits.interactions[line.first][line.second];
-                updateLambdaLine(interaction.maxProbScoreLine1, interaction.lineM.first, graph1, line.first);
+                findMaxWeight(interaction.maxProbScoreLine1, interaction.lineM.first, graph1, line.first);
                 interaction.lineL.first = line.first;
 //            std::cerr << interaction.lineL.first << " : " << interaction.lineM.first << " | " << interaction.maxProbScoreLine1
 //                      << " - " << line.second << std::endl;
-                updateLambdaLine(interaction.maxProbScoreLine2, interaction.lineM.second, graph2, line.second);
+                findMaxWeight(interaction.maxProbScoreLine2, interaction.lineM.second, graph2, line.second);
                 interaction.lineL.second = line.second;
 //            std::cerr << interaction.lineL.second << " : " << interaction.lineM.second << " | " << interaction.maxProbScoreLine2
 //                      << " - " << line.first << std::endl;
@@ -438,7 +436,7 @@ void evaluateInteractions(RnaAlignmentTraits & traits, unsigned const & iter)
                     // if the map is not empty means that the line have been already evaluated in a previous iteration
                 {
                     bool proceed2 = false;
-                    if(traits.interactions[interaction.lineM.first].count(interaction.lineM.second) == 0)
+                    if (traits.interactions[interaction.lineM.first].count(interaction.lineM.second) == 0)
                     {
                         proceed2 = true;
                     } else if (traits.interactions[interaction.lineM.first][interaction.lineM.second].weight < interaction.weight)
@@ -464,13 +462,8 @@ void evaluateInteractions(RnaAlignmentTraits & traits, unsigned const & iter)
             }
         }
     }
-    if(flagUpdateClosedLoops)
+    if (flagUpdateClosedLoops)
         updateClosedLoops(traits);
-    std::cerr << "lambda num elements: ";
-    for(unsigned idx=0; idx < length(traits.interactions); ++idx)
-        std::cerr << length(traits.interactions[idx]) << "\t";
-    std::cerr << std::endl;
-
 }
 
 // ----------------------------------------------------------------------------
@@ -502,9 +495,10 @@ void computeNumberOfSubgradients(RnaAlignmentTraits & traits, seqan::String<Posi
             }
 */
             RnaInteraction & interaction = traits.interactions[line.first][line.second];
-            if(interaction.closedLoop)
+            if (interaction.closedLoop)
             {
-                if (interaction.iterUpdate >= 0 &&  interaction.iterUpdate == traits.interactions[interaction.lineM.first][interaction.lineM.second].iterUpdate)
+                if (interaction.iterUpdate >= 0 &&
+                    interaction.iterUpdate == traits.interactions[interaction.lineM.first][interaction.lineM.second].iterUpdate)
                 {
                     if (interaction.lineL.first !=
                         traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.first
@@ -513,11 +507,13 @@ void computeNumberOfSubgradients(RnaAlignmentTraits & traits, seqan::String<Posi
                     {
                         stucturalLine = true;
                     }
-                } else
+                }
+                else
                 {
                     stucturalLine = true;
                 }
-            } else
+            }
+            else
             {
                 stucturalLine = true;
             }

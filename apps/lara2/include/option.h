@@ -175,7 +175,7 @@ struct LaraOptions
             thrBppm(1e-15), // 0.1 is the value used in the old Lara
             iterations(500),
             nonDecreasingIterations(50u),
-            lowerBoundMethod(LBLEMONMWM),
+            lowerBoundMethod(MWM_LEMON),
             epsilon(0.0001),
             my(1.0),
             laraScoreMatrixName(""), //laraScoreMatrixName("RIBOSUM65"),

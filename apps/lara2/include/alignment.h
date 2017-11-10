@@ -104,7 +104,7 @@ void initialAlignment(String<double> & results, StringSet<RnaAlignment> & alignm
     scoreMatrix.data_gap_extend = options.generatorGapExtend / options.sequenceScale;
     scoreMatrix.data_gap_open   = options.generatorGapOpen   / options.sequenceScale;
 
-    if (!options.globalLocal)  //TODO implement the global-unconstrained alignment using the parameters in the options
+    if (!options.alignLocally)  //TODO implement the global-unconstrained alignment using the parameters in the options
     {
         if (options.affineLinearDgs == 0)
             results = globalAlignment(alignments, scoreMatrix, AffineGaps());
@@ -132,7 +132,7 @@ void initialAlignment(String<double> & results, StringSet<RnaAlignment> & alignm
 void structuralAlignment(String<double> & results, StringSet<RnaAlignment> & alignments,
                          RnaAlignmentTraitsVector const & alignmentTraits, LaraOptions const & options)
 {
-    if (!options.globalLocal)  //TODO implement the global-unconstrained alignment using the parameters in the options
+    if (!options.alignLocally)  //TODO implement the global-unconstrained alignment using the parameters in the options
     {
         if (options.affineLinearDgs == 0)
         {

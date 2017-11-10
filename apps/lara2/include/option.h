@@ -58,8 +58,6 @@
 // defines all the constants used in the app
 #include "data_types.h"
 
-//using namespace std;
-
 // ============================================================================
 // Functors
 // ============================================================================
@@ -77,133 +75,98 @@ typedef IsSlash            IsPathDelimited;
 // ----------------------------------------------------------------------------
 // Class Options
 // ----------------------------------------------------------------------------
-//TODO this can be re-written as a set of three maps with keys and values but
-//if in the future should be embedded in the parsing function is better to
-//conserve this style
+
 struct LaraOptions
 {
 // use base pairs or structure
-    bool useBasePairs;
+//    bool useBasePairs{true};
 // Name of input file
-    seqan::CharString inFile;
+    seqan::CharString inFile{};
 // Name of input fileRef
-    seqan::CharString inFileRef;
+    seqan::CharString inFileRef{};
 // Name of output file (default: stdout)
-    seqan::CharString outFile;
+    seqan::CharString outFile{};
 // temporary directory where to save intermediate files. Default: use the input file directory.
-    seqan::CharString tmpDir;
+    seqan::CharString tmpDir{};
 // Use the gap scheme to be used in the N-W alignment (default: affine(0))
-    unsigned affineLinearDgs;
+    unsigned affineLinearDgs{0u};
 // Use the global local or global-Unconstrained algorithm (default: global(0) - local(1) )
-    bool globalLocal;
+    bool alignLocally{false};
 // type used for the global-unconstrained alignment AlignConfig <TTop, Tleft, TRight, TDown>
-    bool unTop;
-    bool unLeft;
-    bool unRight;
-    bool unDown;
+//    bool unTop{false};
+//    bool unLeft{false};
+//    bool unRight{false};
+//    bool unDown{false};
 // Threshold of ratio sizes for automatic choice global and global-Unconstrained algorithm (default: 2/3)
-    double thrGlobalUnconstr;
+//    double thrGlobalUnconstr{0.666667};
 // Threshold of ratio sizes for automatic choice global and Local algorithm (default: 1/2))
-    double thrGlobalLocal;
+//    double thrGlobalLocal{0.5};
 // Parameter used during the RNAfold execution to select the minimum energy to be considered
-    double thrBppm;
+    double thrBppm{1e-15}; // old Lara: 0.1
 // number of iterations
-    unsigned iterations;
+    unsigned iterations{500u};
 // number of non-decreasing iterations
-    unsigned nonDecreasingIterations;
+    unsigned nonDecreasingIterations{50u};
 // method to be used for the computation of the Lower bound (MWM or approximation can be chosen)
-    unsigned lowerBoundMethod;
+    unsigned lowerBoundMethod{MWM_LEMON};
 // value to be considered for the equality of upper and lower bounds difference
-    double epsilon;
+    double epsilon{0.0001};
 // my, necessary for computing appropriate step sizes
-    double my; //FIXME to be changed the name
+    double stepSizeScaling{1.0};
 // scoring matrix name that should be used for scoring alignment edges in the actual problem
-    seqan::CharString laraScoreMatrixName;
+    seqan::CharString laraScoreMatrixName{};
 //    Score<double, ScoreMatrix<Rna5, Default> > laraScoreMatrix;
     TScoreMatrix laraScoreMatrix;
 //    TScoringSchemeRib laraScoreMatrixRib;
 // Gap open and extend costs for generating the alignment edges
-    double generatorGapOpen;
-    double generatorGapExtend;
-    //double generatorSuboptimality;
-    // FIXME what means this parameter? (Parameter for the generation of alignment edges. The higher the value of 'generatorsuboptimality', the more alignment edges are created.)
+    double generatorGapOpen{-6.0};
+    double generatorGapExtend{-2.0};
+
+    // Parameter for the generation of alignment edges. The higher the value of 'generatorsuboptimality',
+    // the more alignment edges are created.
+    // double generatorSuboptimality{40};
+
 // Gap open and extend costs for generating the alignment edges
-    double laraGapOpen;
-    double laraGapExtend;
+    double laraGapOpen{-6.0};
+    double laraGapExtend{-2.0};
 // scaling factor for the scores of the alignment edges
-    double sequenceScale; // Specifies the contribution of the sequence scores (specified by the larascore matrix) to the overall structural alignment.
+// Specifies the contribution of the sequence scores (specified by the larascore matrix) to the overall structural
+// alignment.
+    double sequenceScale{1.0};
 // gap penalty for RSA
-    double rsaGapPenalty;
+//    double rsaGapPenalty{3.0};
 // scoring mode, either LOGARITHMIC, SCALE, ORIGINAL, RIBOSUM
-    unsigned structureScoring;
+    unsigned structureScoring{LOGARITHMIC};
 // define the weight of _half_ an interaction match for fixed structures
-    double fixedStructWeight;
+    double fixedStructWeight{8.0};
 // if structureScoring=SCALING then we have to give a scaling factor
-    double scalingFactor;
+    double scalingFactor{1.0};
 // if true the opposite lines found during the upper bound computation with a max score must be saved and used
-    bool useOppositLineUB;
+//    bool useOppositLineUB{true};
 // specify the location of T-COFFEE
-    seqan::CharString tcoffeeLocation;
+    seqan::CharString tcoffeeLocation{"t_coffee/t_coffee_5.05"};
 // specify the method to be used to create the T-Coffe library
-    unsigned tcoffeLibMode;
+    unsigned tcoffeLibMode{SWITCH};
 // Define the id of the sequence that must be splitted
-    unsigned splitSequence;
+//    unsigned splitSequence{1u};
 // window size specifies the length of the sliding window when the local alignment algorithm is used
 // (long sequence vs short)
-    unsigned windowSize;
+//    unsigned windowSize{100};
 // time used for an hard timeout
-    unsigned timeLimit;
-// verbose(0) no outputs,
-// verbose(1) Displays global statistics,
-// verbose(2) Displays extensive statistics for each batch of reads,
-// verbose(3) Debug output.
-    unsigned verbose;
-// number of threads forced
-    unsigned threads;
-// number of threads detected
-    unsigned threadsCount;
-    LaraOptions() :
-            useBasePairs(true),
-            affineLinearDgs(0),
-            globalLocal(false),
-            unTop(false),
-            unLeft(false),
-            unRight(false),
-            unDown(false),
-            thrGlobalUnconstr(0.666667),
-            thrGlobalLocal(0.5),
-            thrBppm(1e-15), // 0.1 is the value used in the old Lara
-            iterations(500),
-            nonDecreasingIterations(50u),
-            lowerBoundMethod(MWM_LEMON),
-            epsilon(0.0001),
-            my(1.0),
-            laraScoreMatrixName(""), //laraScoreMatrixName("RIBOSUM65"),
-            generatorGapOpen(-6.0),
-            generatorGapExtend(-2.0),
-            // generatorSuboptimality(40),
-            laraGapOpen(-6.0),
-            laraGapExtend(-2.0),
-            sequenceScale(1.0),
-            rsaGapPenalty(3.0),
-            structureScoring(LOGARITHMIC),
-            fixedStructWeight(8.0),
-            scalingFactor(1.0),
-            useOppositLineUB(true),
-            tcoffeeLocation("t_coffee/t_coffee_5.05"),
-            tcoffeLibMode(SWITCH),
-            splitSequence(1),
-            windowSize(100),
-            timeLimit(std::numeric_limits<unsigned>::max()),
-            verbose(0)
-    {
+//    unsigned timeLimit{std::numeric_limits<unsigned>::max()};
+    unsigned verbose{0u};
+
 #ifdef _OPENMP
-        threadsCount = std::thread::hardware_concurrency(); // omp_get_num_threads()
-        threads = threadsCount;
+    // number of threads forced
+    unsigned threads{std::thread::hardware_concurrency()}; // omp_get_num_threads()
+    // number of threads detected
+    unsigned threadsCount{std::thread::hardware_concurrency()};
 #else
-        threadsCount = 1;
+    // number of threads forced
+    unsigned threads{1u};
+    // number of threads detected
+    unsigned threadsCount{1u};
 #endif
-    }
 };
 
 // ============================================================================
@@ -217,103 +180,183 @@ using namespace seqan;
 template <typename TOption>
 void setupArgumentParser(ArgumentParser & parser, TOption const & /* options */)
 {
-    setAppName(parser, "LaRA-GU");
+    setAppName(parser, "SeqAn::LaRA");
     setShortDescription(parser, "Lagrangian Relaxation Structural Alignment Algorithm");
     setCategory(parser, "Structural Alignment Algorithm");
-    setVersion(parser, "1.0");
-    setDate(parser, "2016");
+    setVersion(parser, "2.0");
+    setDate(parser, "2017");
     //setDateAndVersion(parser);
     //setDescription(parser);
-    addUsageLine(parser, "./lara <\\fI-i inFile\\fP> \
-            [\\fI-w outFile\\fP] [\\fI -parameters\\fP]");
-    addOption(parser, ArgParseOption("v", "verbose", "verbose(0) no outputs, verbose(1) Displays global statistics, "
-            "verbose(2) Displays extensive statistics for each batch of reads, verbose(3) Debug output.",
-            ArgParseArgument::INTEGER, "INT"));
 
-    addSection(parser, "LaRA Alignment Options");
-    addOption(parser, ArgParseOption("s", "useBasePairs", "Use structure prediction or fixed structure from extended "
-            "input file."));
-    addOption(parser, ArgParseOption("g", "affineLinearDgs", "Chose the gap scheme affine(0) linear(1) or dynamic(2) "
-            "to be used in the alignment (default: affine(0)). ", ArgParseArgument::INTEGER, "INT"));
-    addOption(parser, ArgParseOption("a", "globalLocal", "Use the local or global algorithm (default: global(false). "));
-    addOption(parser, ArgParseOption("ut", "unTop", "type used for the global-unconstrained alignment AlignConfig TTop "
-            "(default: top(false). "));
-    addOption(parser, ArgParseOption("ul", "unLeft", "type used for the global-unconstrained alignment AlignConfig "
-            "TLeft (default: left(false). "));
-    addOption(parser, ArgParseOption("ur", "unRight", "type used for the global-unconstrained alignment AlignConfig "
-            "TRight (default: right(false). "));
-    addOption(parser, ArgParseOption("ud", "unDown", "type used for the global-unconstrained alignment AlignConfig "
-            "TDown (default: dow(false). "));
-    addOption(parser, ArgParseOption("tgu", "thrGlobalUnconstr", "Threshold of ratio sizes for automatic choice "
-            "global and global-Unconstrained algorithm (default: 2/3)", ArgParseArgument::DOUBLE, "DOUBLE"));
-    addOption(parser, ArgParseOption("tgl", "thrGlobalLocal", "Threshold of ratio sizes for automatic choice global "
-            "and Local algorithm (default: 1/2))", ArgParseArgument::DOUBLE, "DOUBLE"));
-    addOption(parser, ArgParseOption("tb", "thrBppm", "(Parameter used during the RNAfold execution to select the "
-            "minimum energy to be considered (default: 1e-15) ", ArgParseArgument::DOUBLE, "DOUBLE"));
-    addOption(parser, ArgParseOption("iter", "iterations", "number of iterations. ", ArgParseArgument::INTEGER, "INT"));
-    addOption(parser, ArgParseOption("nditer", "nonDecreasingIterations", "number of non-decreasing iterations.",
+    addUsageLine(parser, "./lara <\\fI-i inFile\\fP> [\\fI-w outFile\\fP] [\\fI -parameters\\fP]");
+
+    addOption(parser, ArgParseOption("v", "verbose",
+                                     "0: no additional outputs, 1: global statistics, "
+                                         "2: extensive statistics for each batch of reads, 3: Debug output. (1)",
                                      ArgParseArgument::INTEGER, "INT"));
-    addOption(parser, ArgParseOption("lbm", "lowerBoundMethod", "method to be used for the computation of the Lower "
-            "bound (MWM or approximation can be chosen)", ArgParseArgument::INTEGER, "INT"));
-    addOption(parser, ArgParseOption("ep", "epsilon", "value to be considered for the equality of upper and lower "
-            "bounds difference", ArgParseArgument::DOUBLE, "DOUBLE"));
-    addOption(parser, ArgParseOption("my", "my", "necessary for computing appropriate step sizes.",
+
+    // Input options
+    addSection(parser, "Input Options");
+
+    addOption(parser, ArgParseOption("i", "inFile",
+                                     "Path to the input file",
+                                     ArgParseArgument::INPUT_FILE, "IN"));
+
+    addOption(parser, ArgParseOption("ir", "inFileRef",
+                                     "Path to the reference input file",
+                                     ArgParseArgument::INPUT_FILE, "IN"));
+
+    // Output options
+    addSection(parser, "Output Options");
+
+    addOption(parser, ArgParseOption( "w", "outFile",
+                                             "Path to the output file (default: stdout)",
+                                             ArgParseArgument::OUTPUT_FILE, "OUT"));
+
+    addOption(parser, ArgParseOption("td", "tmpDir",
+                                     "A temporary directory where to save intermediate files. (input file directory)",
+                                     ArgParseOption::STRING));
+
+    addOption(parser, ArgParseOption("tcl", "tcoffeeLocation",
+                                     "location of T-COFFEE.",
+                                     ArgParseOption::STRING));
+
+    addOption(parser, ArgParseOption("tcm","tcoffeLibMode",
+                                     "method used to create the T-Coffe library either 0: PROPORTIONAL, 1: SWITCH, "
+                                         "2: ALLINTER, 3: FIXEDINTER. (0)",
+                                     ArgParseArgument::INTEGER, "INT"));
+
+    // Alignment options
+    addSection(parser, "LaRA Alignment Options");
+
+    addOption(parser, ArgParseOption("g", "affineLinearDgs",
+                                     "Chose the gap scheme affine(0) linear(1) or dynamic(2) "
+                                         "to be used in the alignment. (affine(0)). ",
+                                     ArgParseArgument::INTEGER, "INT"));
+
+    addOption(parser, ArgParseOption("a", "local",
+                                     "Perform local alignment. (False)"));
+
+    addOption(parser, ArgParseOption("tb", "thrBppm",
+                                     "(Parameter used during the RNAfold execution to select the minimum energy to be "
+                                         "considered (1e-15)",
                                      ArgParseArgument::DOUBLE, "DOUBLE"));
-    addOption(parser, ArgParseOption("lsm","laraScoreMatrixName", "scoring matrix name that should be used for scoring "
-            "alignment edges in the actual problem", ArgParseOption::STRING));
+
+    addOption(parser, ArgParseOption("iter", "iterations",
+                                     "number of iterations. ",
+                                     ArgParseArgument::INTEGER, "INT"));
+
+    addOption(parser, ArgParseOption("nditer", "nonDecreasingIterations",
+                                     "number of non-decreasing iterations. (50)",
+                                     ArgParseArgument::INTEGER, "INT"));
+
+    addOption(parser, ArgParseOption("lbm", "lowerBoundMethod",
+                                     "method to be used for the computation of the Lower bound (0: LEMON, 1: GREEDY, "
+                                         "2: SIMPLE) (0)",
+                                     ArgParseArgument::INTEGER, "INT"));
+
+    addOption(parser, ArgParseOption("ep", "epsilon",
+                                     "value to be considered for the equality of upper and lower bounds difference",
+                                     ArgParseArgument::DOUBLE, "DOUBLE"));
+
+    addOption(parser, ArgParseOption("my", "stepSizeScaling",
+                                     "necessary for computing appropriate step sizes.",
+                                     ArgParseArgument::DOUBLE, "DOUBLE"));
+
+    addOption(parser, ArgParseOption("lsm", "laraScoreMatrixName",
+                                     "scoring matrix name that should be used for scoring alignment edges in the "
+                                         "actual problem",
+                                     ArgParseOption::STRING));
+
     addOption(parser, ArgParseOption("ggo", "generatorGapOpen",
                                      "Gap open costs for generating the alignment edges.",
                                      ArgParseArgument::DOUBLE, "DOUBLE"));
+
     addOption(parser, ArgParseOption("gge", "generatorGapExtend",
                                      "Gap extend costs for generating the alignment edges.",
                                      ArgParseArgument::DOUBLE, "DOUBLE"));
-    // addOption(parser, ArgParseOption("gso", "generatorSuboptimality",
-    //                                  "suboptimality costs for generating the alignment edges.",
-    //                                  ArgParseArgument::DOUBLE, "DOUBLE"));
+
     addOption(parser, ArgParseOption("lgo", "laraGapOpen",
                                      "Gap open costs for generating the alignment edges",
                                      ArgParseArgument::DOUBLE, "DOUBLE"));
+
     addOption(parser, ArgParseOption("lge", "laraGapExtend",
                                      "Gap extend costs for generating the alignment edges",
                                      ArgParseArgument::DOUBLE, "DOUBLE"));
+
     addOption(parser, ArgParseOption("ssc", "sequenceScale",
                                      "scaling factor for the scores of the alignment edges",
                                      ArgParseArgument::DOUBLE, "DOUBLE"));
-    addOption(parser, ArgParseOption("rsag", "rsaGapPenalty", "gap penalty for RSA",
-                                     ArgParseArgument::DOUBLE, "DOUBLE"));
-    addOption(parser, ArgParseOption("stsc", "structureScoring", "scoring mode, either LOGARITHMIC, SCALE, ORIGINAL, RIBOSUM",
+
+    addOption(parser, ArgParseOption("stsc", "structureScoring",
+                                     "scoring mode, either LOGARITHMIC (0), SCALE (1), ORIGINAL (2), RIBOSUM (3). (0)",
                                      ArgParseArgument::INTEGER, "INT"));
-    addOption(parser, ArgParseOption("fsw", "fixedStructWeight", "define the weight of _half_ an interaction match for "
-            "fixed structures", ArgParseArgument::DOUBLE, "DOUBLE"));
-    addOption(parser, ArgParseOption("scal", "scalingFactor", "if structurescoring=SCALING then we have to give a "
-            "scaling factor", ArgParseArgument::DOUBLE, "DOUBLE"));
-    addOption(parser, ArgParseOption("uolub", "useOppositLineUB", "if true the opposite lines found during the upper "
-            "bound computation with a max score must be saved and used", ArgParseArgument::BOOL, "BOOL"));
-    addOption(parser, ArgParseOption("spseq", "splitSequence", "Define the id of the sequence that must be splitted.",
-                                     ArgParseArgument::INTEGER, "INT")); // TODO fix the meaning of this parameter
-    addOption(parser, ArgParseOption("ws", "windowSize", "window size specifies the length of the sliding window.",
-                                     ArgParseArgument::INTEGER, "INT")); // TODO fix the meaning of this parameter
-    addOption(parser, ArgParseOption("tl", "timeLimit", "some additional option.", ArgParseArgument::INTEGER, "INT"));
 
+    addOption(parser, ArgParseOption("fsw", "fixedStructWeight",
+                                     "define the weight of _half_ an interaction match for fixed structures",
+                                     ArgParseArgument::DOUBLE, "DOUBLE"));
 
-    addSection(parser, "Input Options");
-    addOption(parser, ArgParseOption("i", "inFile", "Path to the input file", ArgParseArgument::INPUT_FILE, "IN"));
-    addOption(parser, ArgParseOption("ir", "inFileRef", "Path to the reference input file",
-                                     ArgParseArgument::INPUT_FILE, "IN"));
+    addOption(parser, ArgParseOption("scal", "scalingFactor",
+                                     "if structurescoring=SCALING then we have to give a scaling factor",
+                                     ArgParseArgument::DOUBLE, "DOUBLE"));
 
-    addSection(parser, "Output Options");
-    addOption(parser, seqan::ArgParseOption( "w", "outFile", "Path to the output file (default: stdout)",
-                                             ArgParseArgument::OUTPUT_FILE, "OUT"));
-    addOption(parser, ArgParseOption("td", "tmpDir", "Specify a temporary directory where to save intermediate files. \
-            Default: use the input file directory.", ArgParseOption::STRING));
-    addOption(parser, ArgParseOption("tcl", "tcoffeeLocation", "location of T-COFFEE.", ArgParseOption::STRING));
-    addOption(parser, ArgParseOption("tcm","tcoffeLibMode", "method used to create the T-Coffe library "
-                                             "either     PROPORTIONAL, SWITCH (defoult), ALLINTER, FIXEDINTER", ArgParseArgument::INTEGER, "INT"));
+//    addOption(parser, ArgParseOption("spseq", "splitSequence",
+//                                     "Define the id of the sequence that must be splitted.",
+//                                     ArgParseArgument::INTEGER, "INT")); // TODO fix the meaning of this parameter
+//
+//    addOption(parser, ArgParseOption("ws", "windowSize",
+//                                     "window size specifies the length of the sliding window.",
+//                                     ArgParseArgument::INTEGER, "INT")); // TODO fix the meaning of this parameter
+//
+//    addOption(parser, ArgParseOption("tl", "timeLimit",
+//                                     "set time-out for prograam execution",
+//                                     ArgParseArgument::INTEGER, "INT"));
+//
+//    addOption(parser, ArgParseOption("tgu", "thrGlobalUnconstr",
+//                                     "Threshold of ratio sizes for automatic choice global and global-Unconstrained "
+//                                         "algorithm (2/3)",
+//                                     ArgParseArgument::DOUBLE, "DOUBLE"));
+//
+//    addOption(parser, ArgParseOption("ut", "unTop",
+//                                     "type used for the global-unconstrained alignment AlignConfig TTop (False)"));
+//
+//    addOption(parser, ArgParseOption("ul", "unLeft",
+//                                     "type used for the global-unconstrained alignment AlignConfig TLeft (False)"));
+//
+//    addOption(parser, ArgParseOption("ur", "unRight",
+//                                     "type used for the global-unconstrained alignment AlignConfig TRight (False)"));
+//
+//    addOption(parser, ArgParseOption("ud", "unDown",
+//                                     "type used for the global-unconstrained alignment AlignConfig TDown (False)"));
+//
+//    addOption(parser, ArgParseOption("tgl", "thrGlobalLocal",
+//                                     "Threshold of ratio sizes for automatic choice global and Local algorithm (1/2))",
+//                                     ArgParseArgument::DOUBLE, "DOUBLE"));
+//
+//    addOption(parser, ArgParseOption("s", "useBasePairs",
+//                                     "Use structure prediction or fixed structure from extended input file."));
+//
+//    addOption(parser, ArgParseOption("gso", "generatorSuboptimality",
+//                                      "suboptimality costs for generating the alignment edges.",
+//                                      ArgParseArgument::DOUBLE, "DOUBLE"));
+//
+//    addOption(parser, ArgParseOption("rsag", "rsaGapPenalty",
+//                                     "gap penalty for RSA",
+//                                     ArgParseArgument::DOUBLE, "DOUBLE"));
+//
+//    addOption(parser, ArgParseOption("uolub", "useOppositLineUB",
+//                                     "if true the opposite lines found during the upper bound computation with a "
+//                                         "max score must be saved and used",
+//                                     ArgParseArgument::BOOL, "BOOL"));
 
     // Setup performance options.
     addSection(parser, "Performance Options");
-    addOption(parser, ArgParseOption("t", "threads", "Specify the number of threads to use.", ArgParseOption::INTEGER));
+
+    addOption(parser, ArgParseOption("t", "threads",
+                                     "Specify the number of threads to use.",
+                                     ArgParseOption::INTEGER));
     setMinValue(parser, "threads", "1");
+
 #ifdef _OPENMP
     setMaxValue(parser, "threads", std::to_string(std::thread::hardware_concurrency() + 1));
 #else
@@ -407,46 +450,45 @@ getPath(TString const & string)
 // ----------------------------------------------------------------------------
 // Function parseCmd()
 // ----------------------------------------------------------------------------
-template <typename TOption>
-ArgumentParser::ParseResult parse(TOption & options, ArgumentParser & parser, int argc, char const ** argv)
+ArgumentParser::ParseResult parse(LaraOptions & options, ArgumentParser & parser, int argc, char const ** argv)
 {
     ArgumentParser::ParseResult res = parse(parser, argc, argv);
     if (res != ArgumentParser::PARSE_OK)
         return res;
     getOptionValue(options.verbose, parser, "verbose");
-    getOptionValue(options.useBasePairs, parser, "useBasePairs");
     getOptionValue(options.affineLinearDgs, parser, "affineLinearDgs");
-    getOptionValue(options.globalLocal, parser, "globalLocal");
-    getOptionValue(options.unTop, parser, "unTop");
-    getOptionValue(options.unLeft, parser, "unLeft");
-    getOptionValue(options.unRight, parser, "unRight");
-    getOptionValue(options.unDown, parser, "unDown");
-    getOptionValue(options.thrGlobalUnconstr, parser, "thrGlobalUnconstr");
-    getOptionValue(options.thrGlobalLocal, parser, "thrGlobalLocal");
+    getOptionValue(options.alignLocally, parser, "local");
     getOptionValue(options.thrBppm, parser, "thrBppm");
     getOptionValue(options.iterations, parser, "iterations");
     getOptionValue(options.nonDecreasingIterations, parser, "nonDecreasingIterations");
     getOptionValue(options.lowerBoundMethod, parser, "lowerBoundMethod");
     getOptionValue(options.epsilon, parser, "epsilon");
-    getOptionValue(options.my, parser, "my");
+    getOptionValue(options.stepSizeScaling, parser, "stepSizeScaling");
     getOptionValue(options.laraScoreMatrixName, parser, "laraScoreMatrixName");
     getOptionValue(options.generatorGapOpen, parser, "generatorGapOpen");
     getOptionValue(options.generatorGapExtend, parser, "generatorGapExtend");
-    // getOptionValue(options.generatorSuboptimality, parser, "generatorSuboptimality");
     getOptionValue(options.laraGapOpen, parser, "laraGapOpen");
     getOptionValue(options.laraGapExtend, parser, "laraGapExtend");
     getOptionValue(options.sequenceScale, parser, "sequenceScale");
-    getOptionValue(options.rsaGapPenalty, parser, "rsaGapPenalty");
     getOptionValue(options.structureScoring, parser, "structureScoring");
     getOptionValue(options.fixedStructWeight, parser, "fixedStructWeight");
     getOptionValue(options.scalingFactor, parser, "scalingFactor");
-    getOptionValue(options.useOppositLineUB, parser, "useOppositLineUB");
     getOptionValue(options.tcoffeeLocation, parser, "tcoffeeLocation");
     getOptionValue(options.tcoffeLibMode, parser, "tcoffeLibMode");
-    getOptionValue(options.splitSequence, parser, "splitSequence");
-    getOptionValue(options.windowSize, parser, "windowSize");
-    getOptionValue(options.timeLimit, parser, "timeLimit");
     getOptionValue(options.threads, parser, "threads");
+//    getOptionValue(options.useBasePairs, parser, "useBasePairs");
+//    getOptionValue(options.unTop, parser, "unTop");
+//    getOptionValue(options.unLeft, parser, "unLeft");
+//    getOptionValue(options.unRight, parser, "unRight");
+//    getOptionValue(options.unDown, parser, "unDown");
+//    getOptionValue(options.thrGlobalUnconstr, parser, "thrGlobalUnconstr");
+//    getOptionValue(options.thrGlobalLocal, parser, "thrGlobalLocal");
+//    getOptionValue(options.generatorSuboptimality, parser, "generatorSuboptimality");
+//    getOptionValue(options.rsaGapPenalty, parser, "rsaGapPenalty");
+//    getOptionValue(options.useOppositLineUB, parser, "useOppositLineUB");
+//    getOptionValue(options.splitSequence, parser, "splitSequence");
+//    getOptionValue(options.windowSize, parser, "windowSize");
+//    getOptionValue(options.timeLimit, parser, "timeLimit");
 
     getOptionValue(options.inFile, parser, "inFile");
     if (empty(options.inFile))
@@ -472,8 +514,6 @@ ArgumentParser::ParseResult parse(TOption & options, ArgumentParser & parser, in
         options.tmpDir = tmpDir;
         _V(options, "The absolute path where to create the tmpDir is " << tmpDir);
     }
-    setScoreMatrix(options);
-//    showScoringMatrix(options.laraScoreMatrix);
     return ArgumentParser::PARSE_OK;
 }
 

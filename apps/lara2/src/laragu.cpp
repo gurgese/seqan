@@ -104,6 +104,7 @@ int main (int argc, char const ** argv)
     ArgumentParser::ParseResult res = parse(options, argumentParser, argc, argv); // Fill the LaraOptions
     if (res != ArgumentParser::ParseResult::PARSE_OK)
         return res == ArgumentParser::ParseResult::PARSE_ERROR ? 1 : 0;
+    setScoreMatrix(options);
 
     // Read input files.
     // If one input file is given, then build unique pairs of the input sequences.
@@ -137,7 +138,7 @@ int main (int argc, char const ** argv)
 
         traits.structureScore.matrix = options.laraScoreMatrix;
         traits.structureScore.interactions = & traits.interactions;
-        traits.stepSizeScaling = options.my;
+        traits.stepSizeScaling = options.stepSizeScaling;
     }
 
     // Create the alignment data structure that will host the alignments with small difference between bounds.
@@ -211,8 +212,7 @@ int main (int argc, char const ** argv)
                 // This alignment is already optimal.
                 isOptimal[idx] = true;
                 foundAnOptimalAlignment = true;
-                _VV(options, "Computation for alignment " << idx << " stops in iteration "
-                                                          << iter << " and the bestAlignMinBounds is returned.");
+                _VV(options, "Computation for alignment " << idx << " stops in iteration " << iter << ".");
             }
             else
             {

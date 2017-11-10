@@ -67,7 +67,8 @@ public:
 //                return (*interactions)[seq1_pos][seq2_pos].weight;
 //            else
             return ((*interactions)[seq1_pos][seq2_pos].lambdaValue + (*interactions)[seq1_pos][seq2_pos].weight);
-        } else
+        }
+        else
         {
             return 0;
         }

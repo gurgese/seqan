@@ -112,6 +112,8 @@ typedef std::pair<unsigned, unsigned> PositionPair;
 
 typedef seqan::Graph<seqan::Undirected<double> > RnaInteractionGraph;
 
+struct LaraOptions;
+
 // lambda value for subgradient optimization, initialized with 0
 struct RnaInteraction
 {

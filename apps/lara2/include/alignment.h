@@ -214,8 +214,8 @@ void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector &
         for (TRnaVect::iterator it2 = it1 + 1u; it2 != seqs.end(); ++it2)
         {
             _fillVectors(setH, setV, alignInfo, it1, it2);
-            alignmentTraits[p].sequenceIndices.first  = std::distance(seqs.begin(), it1);
-            alignmentTraits[p].sequenceIndices.second = std::distance(seqs.begin(), it2);
+            alignmentTraits[p].sequenceIndices.first  = static_cast<unsigned>(std::distance(seqs.begin(), it1));
+            alignmentTraits[p].sequenceIndices.second = static_cast<unsigned>(std::distance(seqs.begin(), it2));
             ++p;
         }
     }
@@ -236,13 +236,13 @@ void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector &
         RnaAlignmentTraitsVector::iterator alignInfo = alignmentTraits.begin();
 
         unsigned p = 0;
-        for (TRnaVect::iterator it1 = seqs1.begin(); it1 != seqs1.end(); ++it1)
+        for (TRnaVect::iterator it1 = seqs1.begin(); it1 < seqs1.end(); ++it1)
         {
-            for (TRnaVect::iterator it2 = seqs2.begin(); it2 != seqs2.end(); ++it2)
+            for (TRnaVect::iterator it2 = seqs2.begin(); it2 < seqs2.end(); ++it2)
             {
                 _fillVectors(setH, setV, alignInfo, it1, it2);
-                alignmentTraits[p].sequenceIndices.first = std::distance(seqs1.begin(), it1);
-                alignmentTraits[p].sequenceIndices.second = std::distance(seqs2.begin(), it2);
+                alignmentTraits[p].sequenceIndices.first = static_cast<unsigned>(std::distance(seqs1.begin(), it1));
+                alignmentTraits[p].sequenceIndices.second = static_cast<unsigned>(std::distance(seqs2.begin(), it2));
                 ++p;
             }
         }

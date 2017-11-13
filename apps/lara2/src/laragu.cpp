@@ -110,7 +110,7 @@ int main (int argc, char const ** argv)
     // If one input file is given, then build unique pairs of the input sequences.
     // If two input files are given, then build the cross product of all sequences from the first file
     //     with all sequences from the second file.
-    RnaStructContentsPair filecontents;
+    RnaStructContentsPair filecontents{};
     readRnaFile(filecontents.first, options.inFile, options);
     readRnaFile(filecontents.second, options.inFileRef, options);
     _VV(options, "Read " << length(filecontents.first.records) << " and "
@@ -289,10 +289,8 @@ int main (int argc, char const ** argv)
     }
 
     alignmentTraits.insert(alignmentTraits.end(), optimalAlignTraits.begin(), optimalAlignTraits.end());
+    // This is a multiple alignment and the T-Coffee library must be printed
+    createTCoffeeLib(options, filecontents, alignmentTraits);
 
-    if (!empty(alignmentTraits)) // This is a multiple alignment an the T-Coffee library must be printed
-    {
-        createTCoffeeLib(options, filecontents, alignmentTraits);
-    }
     return 0;
 }

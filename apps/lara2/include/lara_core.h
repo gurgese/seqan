@@ -343,7 +343,7 @@ void saveBestAlignMinDiff(RnaAlignmentTraits & traits, RnaAlignment const & alig
 void saveBestAligns(RnaAlignmentTraits & traits, RnaAlignment const & align, double alignScore, int index)
 {
     saveBestAlignMinDiff(traits, align, alignScore, index);
-//    saveBestAlignMinBound(traits, align, alignScore, index);
+    saveBestAlignMinBound(traits, align, alignScore, index);
 //    saveBestAlignScore(traits, align, alignScore, index);
 }
 

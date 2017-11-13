@@ -150,7 +150,7 @@ struct RnaAlignmentTraits
 {
     seqan::RnaStructureGraph bppGraphH;
     seqan::RnaStructureGraph bppGraphV;
-    std::pair<long, long> sequenceIndices{};
+    std::pair<unsigned, unsigned> sequenceIndices{};
 
     // Mask that represents the matches from the computed alignment
     seqan::String<PositionPair> lines;

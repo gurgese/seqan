@@ -63,71 +63,25 @@ namespace myLemon {
 
 double computeLowerBoundScore(InteractionScoreMap const & validInteractionScores)
 {
-    lemon::SmartGraph lemonG;
     typedef lemon::SmartGraph::EdgeMap<double> EdgeMap;
-    typedef lemon::SmartGraph::NodeIt NodeIt;
-    typedef lemon::SmartGraph::EdgeIt EdgeIt;
+    lemon::SmartGraph lemonG;
+
+    // Add nodes for the LowerBoundGraph
+    std::vector<lemon::SmartGraph::Node> nodes;
+    forEach(validInteractionScores, [&lemonG, &nodes] (ScMap const &) { nodes.push_back(lemonG.addNode()); });
+
+    // Add the edges and assign weights.
     EdgeMap weight(lemonG);
-    // Add vertex for the LowerBoundGraph
-    std::vector<lemon::SmartGraph::Node> fnv;
-    for(unsigned i = 0; i < validInteractionScores.size(); ++i)
+    for (unsigned nodeIdx = 0; nodeIdx < validInteractionScores.size(); ++nodeIdx)
     {
-        lemon::SmartGraph::Node node = lemonG.addNode();
-        fnv.push_back(node);
+        for (std::pair<unsigned, double> const & pairedProb : validInteractionScores[nodeIdx])
+            weight[lemonG.addEdge(nodes[nodeIdx], nodes[pairedProb.first])] = pairedProb.second;
     }
 
-    unsigned ll=0;
-//    typedef Iterator<TLowerBoundGraph, AdjacencyIterator>::Type TAdjacencyIterator;
-//    unsigned j;
-    for(unsigned i = 0; i < validInteractionScores.size(); ++i)
-    { // With this function the direct graph storing all the couples of edges is generated
-        for(auto const & trg_prob : validInteractionScores[i])
-        {
-//        for (const auto& [trg, prob] : validInteractionScores[i])
-//            std::cout << "Planet " << name << ":\n" << description << "\n\n";
-//        for (unsigned j = i+1; j < (validInteractionScores[i].size()); ++j) {
-
-//            std::cout << "(" << i << ":" << trg_prob.first << ") = " << trg_prob.second << std::endl;
-            //validInteractionScores[i][trg] << std::endl; //prob << std::endl;
-            lemon::SmartGraph::Edge edge = lemonG.addEdge(fnv[i], fnv[trg_prob.first]);
-//            lemon::SmartGraph::Edge edge = lemonG.addEdge(node1, node2);
-//            weight[edge] = seqan::cargo(*it);
-            weight[edge] = trg_prob.second; //validInteractionScores[i][trg]; //prob;
-            ++ll;
-        }
-    }
-
-    std::cerr << "Number of edges = " << ll << std::endl;
-    std::cerr << "Nodes:";
-    for (NodeIt i(lemonG); i!=lemon::INVALID; ++i)
-        std::cerr << " " << lemonG.id(i);
-    std::cerr << std::endl;
-
-    std::cerr << "Edges:";
-    for (EdgeIt i(lemonG); i!=lemon::INVALID; ++i)
-        std::cerr << " (" << lemonG.id(lemonG.u(i)) << "," << lemonG.id(lemonG.v(i)) << ")";
-    std::cerr << std::endl;
-
-    // Do stuff
+    // Perform the MWM.
     lemon::MaxWeightedMatching<lemon::SmartGraph, EdgeMap> mwm(lemonG, weight);
     mwm.run();
-
-//    rnaAlign.lowerLemonBound.mwmPrimal = mwm.matchingWeight();
-//    rnaAlign.lowerLemonBound.mwmDual = mwm.dualValue();
-//    rnaAlign.lowerLemonBound.mwmCardinality = mwm.matchingSize();
-    std::cerr << "Lemon result: weight= " << mwm.matchingWeight() << "\tdual= " << mwm.dualValue()
-              << "\tsize= " << mwm.matchingSize() << "\n";
-
-    for(lemon::SmartGraph::EdgeIt e(lemonG); e!=lemon::INVALID; ++e){
-        if(mwm.matching(e)){
-            std::cerr << "weight(" << lemonG.id(lemonG.u(e)) << ","
-                      << lemonG.id(lemonG.v(e)) << ")="<<weight[e]<<std::endl;
-        }
-    }
-
     return mwm.matchingWeight();
-
-//    createLemonGraph(options, rnaAlign, lemonG);
 };
 
 }

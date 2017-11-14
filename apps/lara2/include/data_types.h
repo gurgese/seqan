@@ -59,14 +59,6 @@
 // Prerequisites
 // ============================================================================
 
-enum LaraFileType
-{
-    FASTA,
-    FASTQ,
-    RNASTRUCT,
-    UNKNOWN
-};
-
 enum LaraScore
 {
     LOGARITHMIC,
@@ -85,14 +77,11 @@ enum LaraTCoffeeLibMode
 
 enum LaraMwmMethod
 {
-    LBLEMONMWM,
-    LBAPPROXMWM,
-    LBMWMTEST,
-    LBLINEARTIMEMWM
-};
+    MWM_LEMON,
+    MWM_GREEDY,
+    MWM_SIMPLE
 
-// Value to be used to copare the difference between the upper and the lower bound difference
-double const EPSILON = 0.0001;
+};
 
 //Values used for T-Coffee lib preparation
 int const TCOFFSET = 500;
@@ -111,133 +100,95 @@ int const TCMAX = 1000;
 // Types used in the program
 // ============================================================================
 
-typedef seqan::Rna5String TSequence;
-typedef seqan::Align<TSequence, seqan::ArrayGaps> TAlign;      // align type
-typedef unsigned TPosition;
-typedef double TScoreValue;
-typedef seqan::CharString TString;
-typedef seqan::Score<double, seqan::ScoreMatrix<seqan::Rna5, seqan::Default> > TScoreMatrix;
-typedef seqan::Ribosum65N TRibosum;
-typedef float TBioval;
-typedef std::map<TPosition, TScoreValue> TMap;
-typedef seqan::String<TMap > TMapLine;
-typedef std::vector<TMap > TMapVect;
-typedef std::vector<seqan::RnaRecord > TRnaVect;
+typedef seqan::Align<seqan::Rna5String, seqan::ArrayGaps> RnaAlignment;      // align type
+typedef seqan::Score<double, seqan::ScoreMatrix<seqan::Rna5, seqan::Default> > RnaScoreMatrix;
+typedef std::map<unsigned, double> ScMap;
+typedef std::vector<std::map<unsigned, double> > InteractionScoreMap;
+typedef std::vector<seqan::RnaRecord> RnaRecordVector;
 typedef StringSet<Rna5String, Dependent<Generous> > RnaSeqSet;
+typedef std::pair<RnaStructContents, RnaStructContents> RnaStructContentsPair;
+typedef std::pair<unsigned, unsigned> PositionPair;
+typedef seqan::Graph<seqan::Undirected<double> > RnaInteractionGraph;
 
-struct boundStruct
+struct LaraOptions;
+
+// lambda value for subgradient optimization, initialized with 0
+struct RnaInteraction
 {
-    // String with size seq2
-    unsigned seq1Index;
-    TScoreValue maxProbScoreLine;
-    unsigned seq1IndexPairLine;
-    unsigned seq2IndexPairLine;
+    double lambdaValue{0};
+    double weight{0};
+    double maxProbScoreLine1{0};
+    double maxProbScoreLine2{0};
+    PositionPair lineL{};
+    PositionPair lineM{};
+    int iterUpdate{-1};
+    bool closedLoop{false};
+    // This flag is used for saving mates found during the upper bound update of the line weights.
+    bool fromUBPairing{false};
 };
 
-// String with size seq2
-typedef seqan::String<boundStruct > TBound;
+typedef seqan::String<std::map<unsigned, RnaInteraction> > OutgoingInteractions;
 
-typedef seqan::Graph<seqan::Undirected<double> > TLowerBoundGraph;
-//TODO if the Lemon library is used after the tests this graph structure should be chosen as lemon graph in order to
-// avoid the copy of the graph
-
-struct lowerBoundLemonStruct
-{
-    double mwmPrimal; //value of the maximum weighted matching is here saved
-    double mwmDual; //value of the maximum weighted matching is here saved
-    unsigned mwmCardinality;
-};
-
-// String with size seq2
-typedef lowerBoundLemonStruct TlowerLemonBound;
-
-struct lambWeightStruct
-{
-    TScoreValue step;
-    TScoreValue maxProbScoreLine;
-    unsigned seq1IndexPairLine;
-    unsigned seq2IndexPairLine;
-};
-
-//typedef std::map<TPosition, lambWeightStruct> TMapWeight;
-
-struct lambStruct
-{
-    std::map<TPosition, lambWeightStruct> map; //mapLine;
-};
-
-typedef seqan::String<lambStruct> TLambVect;
-
-typedef seqan::Score<double, seqan::ScoreMatrix<seqan::Rna5, TRibosum> > TScoreMatrixRib;
-typedef seqan::Score<TScoreValue, RnaStructureScore<TScoreMatrix, TLambVect> > TScoringSchemeStruct;
+typedef seqan::Score<double, RnaStructureScore<RnaScoreMatrix, OutgoingInteractions> > LaraScoringScheme;
 
 struct bestAlign
 {
-    TAlign bestAlign;
-    TScoreValue bestAlignScore{std::numeric_limits<TScoreValue>::lowest()};
+    RnaAlignment bestAlign;
+    double bestAlignScore{std::numeric_limits<double>::lowest()};
     int it; //to be used for the best lower bound
-    double lowerBound{};
-    double upperBound{};
-    double stepSizeBound{std::numeric_limits<TScoreValue>::max()};
-    TBound upperBoundVect;
-    seqan::String<std::pair <unsigned, unsigned> > mask;
-    unsigned maskIndex;
+    double lowerBound{std::numeric_limits<double>::lowest()};
+    double upperBound{std::numeric_limits<double>::max()};
+    double stepSizeBound{std::numeric_limits<double>::max()};
+    //TWeightLine weightLineVect;
+    seqan::String<PositionPair> lines;
 };
 typedef bestAlign TBestAlign;
 
-struct RnaStructAlign
+struct RnaAlignmentTraits
 {
-//public:
     seqan::RnaStructureGraph bppGraphH;
     seqan::RnaStructureGraph bppGraphV;
-    unsigned idBppSeqH{};
-    unsigned idBppSeqV{};
-    double sequenceScale{1.0};
-// The best computed alignment is saved in these fields
-    TBestAlign forScore;
-//    TAlign bestAlign;
-//    TScoreValue bestAlignScore{std::numeric_limits<TScoreValue>::lowest()};
-// Mask that represents the matches from the computed alignment
-    seqan::String<unsigned > maskLong;
-    seqan::String<std::pair <unsigned, unsigned> > mask;
-    unsigned maskIndex;
+    std::pair<unsigned, unsigned> sequenceIndices{};
 
-// Lower bound fields
-    double lowerBound{};
-//    TBound lowerBoundVect;
-// This field is used to approximate the maximum weighted match If tests of this usage are positive we can cosider
-// to do not use anymore the Lemon MWM
-    TLowerBoundGraph lowerBoundGraph; //graph useful for the seqan::MaximumWeightedMatch() function
-    TlowerLemonBound lowerLemonBound;
-    double lowerGreedyBound;
+    // Mask that represents the matches from the computed alignment
+    seqan::String<PositionPair> lines;
 
-// Upper bound fields
-    double upperBound{};
-    TBound upperBoundVect;
+//    TWeightLine lowerBoundVect;
+//    This field is used to approximate the maximum weighted match If tests of this usage are positive we can consider
+//    to do not use anymore the Lemon MWM
+//    TLowerBoundGraph lowerBoundGraph; //graph useful for the seqan::MaximumWeightedMatch() function
+//    TlowerLemonBound lowerLemonBound{};
 
-// Parameters used to compute the stepsize
-    int slm{};
-    double stepSize{std::numeric_limits<TScoreValue>::max()};
-    unsigned nonDecreasingIterations{};
-    double my{1.0};
+    // Lower bound values (primal)
+    double lowerBound{std::numeric_limits<double>::lowest()};
+    double bestLowerBound{std::numeric_limits<double>::lowest()};
 
-//  Status when the minumum difference between the two bounds is detected
+    // Upper bound values (dual)
+    double upperBound{std::numeric_limits<double>::max()};
+    double bestUpperBound{std::numeric_limits<double>::max()};
+
+    // Number of edges that violate the relaxed constraint (s_lm).
+    int numberOfSubgradients{};
+    // Step size for lambda changes (gamma).
+    double stepSize{std::numeric_limits<double>::max()};
+    // Scaling factor (mu).
+    double stepSizeScaling{1.0};
+    // Number of iterations without decreasing upper bound.
+    unsigned nonDecreasingIterations{0u};
+    // Score only from sequence comparison and gap costs.
+    double sequenceScore{};
+
+    //  Status when the minimum difference between the two bounds is detected
     TBestAlign forMinBound;
-//    unsigned itMinBounds; //to be used for the best lower bound
-//    double lowerMinBound{};
-//    double upperMinBound{};
-//    double stepSizeMinBound{std::numeric_limits<TScoreValue>::max()};
-//    TAlign bestAlignMinBounds;
-//    TScoreValue bestAlignScoreMinBounds;
+    TBestAlign forMinDiff;
+//    TBestAlign forScore;
 
-// String with size seq1 storing all the aligned lines
-    TLambVect lamb;
+    // String with size seq1 storing all the aligned lines
+    OutgoingInteractions interactions;
 
-// Scoring scheme used for the structural alignment
-    TScoringSchemeStruct structScore;
-};// rnaStructAlign;
-
-typedef RnaStructAlign TRnaAlign;
-typedef std::vector<TRnaAlign> TRnaAlignVect;
+    // Scoring scheme used for the structural alignment
+    LaraScoringScheme structureScore;
+};
+typedef std::vector<RnaAlignmentTraits> RnaAlignmentTraitsVector;
 
 #endif //_INCLUDE_TOP_DATA_STRUCT_H_

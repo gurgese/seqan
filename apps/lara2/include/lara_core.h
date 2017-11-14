@@ -54,428 +54,508 @@ using namespace seqan;
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// Function saveBestAlign()
+// Function evaluateLines()
 // ----------------------------------------------------------------------------
 
-/*
-//template <typename TOption, typename TAlign, typename TScoreValue, typename TRnaAlign>
-void saveBestAlign(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore)
+bool evaluateLines(RnaAlignmentTraits & traits, RnaAlignment const & align, LaraOptions const & options)
 {
-    if (rnaAlign.forScore.bestAlignScore < alignScore)
+    typedef typename Iterator<Gaps<Rna5String, ArrayGaps> const, Standard>::Type TGapsIter;
+
+    Row<RnaAlignment>::Type row0 = row(align, 0);
+    Row<RnaAlignment>::Type row1 = row(align, 1);
+
+    // Get iterators.
+    TGapsIter it0      = begin(row0);
+    TGapsIter itEnd0   = end(row0);
+    TGapsIter it1      = begin(row1);
+    TGapsIter itEnd1   = end(row1);
+
+    // State whether we have already opened a gap.
+    bool isGapOpen0 = false, isGapOpen1 = false;
+    // Keep track of the sequence positions for lines.
+    PositionPair sourcePos(0u, 0u);
+    // True, if this function changes the recent set of lines, False otherwise.
+    bool changedLines = false;
+    // Sum up the sequence and gap score.
+    traits.sequenceScore = 0;
+
+    for (unsigned lineCount = 0u; it0 != itEnd0 && it1 != itEnd1; ++it0, ++it1)
     {
-//        rnaAlign.forScore.it = -1;
-        rnaAlign.forScore.bestAlign = align;
-        rnaAlign.forScore.bestAlignScore = alignScore;
-    }
-};
-*/
-
-// ----------------------------------------------------------------------------
-// Function maskCreator()
-// ----------------------------------------------------------------------------
-
-//template <typename TOption, typename TAlign, typename TScoreValue, typename TRnaAlign>
-void maskCreator(TRnaAlign & rnaAlign, TAlign const & align)
-{
-    unsigned row0Begin = clippedBeginPosition(row(align, 0));
-    unsigned row1Begin = clippedBeginPosition(row(align, 1));
-    unsigned gap0 = 0;
-    unsigned gap1 = 0;
-    unsigned j = 0;
-//    std::cout << "row0Begin " << row0Begin << " row1Begin " << row1Begin << std::endl;
-    //TODO this function can be simplifyed using the function toViewPosition(row0, i)
-    // Initialize the mask vector of size seq_max with a clear configuration
-    for(unsigned i = 0; i < length(row(align, 0)); ++i)  // maximum size of this string is length(mapline)
-    {
-        if (row(align, 0)[i]=='-') // In this choice the assumption that no alignment between - char can exist
+        // Gaps in first sequence
+        if (isGap(it0))
         {
-            ++gap0;
-        }
-        else if (row(align, 1)[i] == '-') // else if (row1[i]=='-')
-        {
-            ++gap1;
-        }
-        else
-        {
-            rnaAlign.mask[j] = std::make_pair(i + row0Begin - gap0, i + row1Begin - gap1);
-            ++j;
-        }
-    }
-    rnaAlign.maskIndex = j;
-}
-
-// ----------------------------------------------------------------------------
-// Function fillBound()
-// ----------------------------------------------------------------------------
-
-void fillBound(TBound & BoundVect, TRnaAlign const & rnaAlign, unsigned x, unsigned y, TScoreValue halfEdgesProb)
-{
-    BoundVect[rnaAlign.mask[x].second].maxProbScoreLine = halfEdgesProb;
-    BoundVect[rnaAlign.mask[x].second].seq1Index = rnaAlign.mask[x].first;
-    BoundVect[rnaAlign.mask[x].second].seq1IndexPairLine = rnaAlign.mask[y].first;
-    BoundVect[rnaAlign.mask[x].second].seq2IndexPairLine = rnaAlign.mask[y].second;
-};
-
-// ----------------------------------------------------------------------------
-// Function computeUpperBound()
-// ----------------------------------------------------------------------------
-
-void computeUpperBoundScore(TRnaAlign & rnaAlign)
-{
-    TScoreValue sum = 0;
-    rnaAlign.slm = 0;
-    for(unsigned i = 0; i < length(rnaAlign.upperBoundVect); ++i)
-    {
-        if (rnaAlign.upperBoundVect[i].maxProbScoreLine > 0)
-        {
-            sum += rnaAlign.upperBoundVect[i].maxProbScoreLine;
-            if (rnaAlign.upperBoundVect[i].seq1Index !=
-                rnaAlign.upperBoundVect[rnaAlign.upperBoundVect[i].seq2IndexPairLine].seq1IndexPairLine)
+            if (!isGapOpen0)
             {
-                ++rnaAlign.slm;
-            }
-        }
-    }
-    rnaAlign.upperBound = sum;
-};
-
-// ----------------------------------------------------------------------------
-// Function computeBound()
-// ----------------------------------------------------------------------------
-
-void computeLowerAndUpperBoundScore(TRnaAlign & rnaAlign)
-{
-    TScoreValue sumU = 0;
-    TScoreValue sumL = 0;
-    rnaAlign.slm = 0;
-    for(unsigned i = 0; i < length(rnaAlign.upperBoundVect); ++i) {
-        if (rnaAlign.upperBoundVect[i].maxProbScoreLine > 0) {
-            // the edges are not paired
-            if (rnaAlign.upperBoundVect[i].seq1Index !=
-                rnaAlign.upperBoundVect[rnaAlign.upperBoundVect[i].seq2IndexPairLine].seq1IndexPairLine)
-            {
-                sumU += rnaAlign.upperBoundVect[i].maxProbScoreLine;
-                ++rnaAlign.slm;
+                traits.sequenceScore += options.laraGapOpen;
             }
             else
             {
-                sumL += rnaAlign.upperBoundVect[i].maxProbScoreLine;
+                traits.sequenceScore += options.laraGapExtend;
             }
-//            std::cout << "Pairs " << rnaAlign.upperBoundVect[i].seq1Index << ":";
-//            std::cout << rnaAlign.upperBoundVect[rnaAlign.upperBoundVect[i].seq2IndexPairLine].seq1IndexPairLine << std::endl;
-//            std::cout << rnaAlign.upperBoundVect[i].maxProbScoreLine << "\t";
-//            std::cout << rnaAlign.upperBoundVect[i].seq1Index << ":" << i << "\t";
-//            std::cout << rnaAlign.upperBoundVect[i].seq1IndexPairLine << ":";
-//            std::cout << rnaAlign.upperBoundVect[i].seq2IndexPairLine << std::endl;
+            isGapOpen0 = true;
+            ++sourcePos.second;
+        }
+        else
+        {
+            isGapOpen0 = false;
+        }
+
+        // Gaps in second sequence
+        if (isGap(it1))
+        {
+            if (!isGapOpen1)
+            {
+                traits.sequenceScore += options.laraGapOpen;
+            }
+            else
+            {
+                traits.sequenceScore += options.laraGapExtend;
+            }
+            isGapOpen1 = true;
+            ++sourcePos.first;
+        }
+        else
+        {
+            isGapOpen1 = false;
+        }
+
+        // Match or mismatch
+        if (!isGap(it0) && !isGap(it1))
+        {
+            // create a line
+            if (lineCount >= length(traits.lines))
+            {
+                appendValue(traits.lines, sourcePos);
+                changedLines = true;
+            }
+            else if (traits.lines[lineCount] != sourcePos)
+            {
+                traits.lines[lineCount] = sourcePos;
+                changedLines = true;
+            }
+
+            ++lineCount;
+            ++sourcePos.first;
+            ++sourcePos.second;
+            traits.sequenceScore += score(options.laraScoreMatrix, *it0, *it1);
         }
     }
-    rnaAlign.upperBound = sumU + sumL;
-    rnaAlign.lowerBound = sumL;
-//    std::cout << "upperBound = " << sumU + sumL << std::endl;
-//    std::cout << "lowerBound = " << sumL << std::endl;
-};
+    SEQAN_ASSERT(it0 == itEnd0);
+    SEQAN_ASSERT(it1 == itEnd1);
+    return changedLines;
+}
+
+// ----------------------------------------------------------------------------
+// Function computeLowerBound()
+// ----------------------------------------------------------------------------
+
+void prepareLowerBoundScores(InteractionScoreMap & validInteractions, RnaAlignmentTraits const & traits)
+{
+    RnaInteractionGraph const & graph1 = traits.bppGraphH.inter;
+    RnaInteractionGraph const & graph2 = traits.bppGraphV.inter;
+    // iterate all lines that are present in the alignment
+//    for (PositionPair const & line : traits.lines)
+    //std::cout << graph1 << std::endl;
+    //std::cout << graph2 << std::endl;
+    String<unsigned> vectOut1, vectOut2;
+//    unsigned nClosedLoops = 0;
+//    unsigned nLinesInteraction = 0;
+    for(unsigned idx = 0; idx < length(traits.lines) - 1; ++idx)
+    {
+        seqan::String<PositionPair > seq2pos;
+        //std::cout << traits.lines[idx].first << " - " << traits.lines[idx].second << std::endl;
+        if (degree(graph1, traits.lines[idx].first) > 0 && degree(graph2, traits.lines[idx].second) > 0) {
+            getVertexAdjacencyVector(vectOut1, graph1, traits.lines[idx].first);
+            for (unsigned x = 0; x < length(vectOut1); ++x) {
+                for (unsigned j = idx + 1; j < length(traits.lines); ++j) {
+                    if (vectOut1[x] == traits.lines[j].first)
+                    {
+//                        std::cout << traits.lines[j].first << " : " << traits.lines[j].second << std::endl;
+                        appendValue(seq2pos, std::make_pair(traits.lines[j].first, traits.lines[j].second));
+                    }
+                }
+            }
+//            ++nLinesInteraction;
+        }
+        if(length(seq2pos) > 0)
+        {
+            getVertexAdjacencyVector(vectOut2, graph2, traits.lines[idx].second);
+            for (unsigned w = 0; w < length(seq2pos); ++w)
+            {
+                for (unsigned y = 0; y < length(vectOut2); ++y)
+                if (seq2pos[w].second == vectOut2[y])
+                {
+//                    std::cout << traits.lines[idx].first << " - " << seq2pos[w].first << " = "
+//                              << cargo(findEdge(graph1, traits.lines[idx].first, seq2pos[w].first)) << " | "
+//                              << traits.lines[idx].second << " - " << seq2pos[w].second << " = "
+//                              << cargo(findEdge(graph2, traits.lines[idx].second, seq2pos[w].second))
+//                              << std::endl;
+//                    ++nClosedLoops;
+                    validInteractions[traits.lines[idx].first][seq2pos[w].first]
+                        = cargo(findEdge(graph1, traits.lines[idx].first, seq2pos[w].first))
+                        + cargo(findEdge(graph2, traits.lines[idx].second, seq2pos[w].second));
+
+/*                    if (degree(graph1, traits.lines[j].first) > 0 && degree(graph2, traits.lines[j].second) > 0)
+                    std::cout << "Interaction match: " << traits.lines[idx].first+1 << " - " << traits.lines[idx].second+1
+                              << " | " << traits.lines[j].first+1 << " - " << traits.lines[j].second+1
+                              << " // " << findEdge(graph1, traits.lines[idx].first, traits.lines[j].first)
+                              << " - " << findEdge(graph2, traits.lines[idx].second, traits.lines[j].second)
+                              << std::endl;
+*/
+                }
+            }
+
+        }
+//        traits.numberOfSubgradients = nLoops + 1 - (nClosedLoops * 2); // TODO check this value: It should be referred to the alignment line only or to all the lambda?
+    }
+}
 
 // ----------------------------------------------------------------------------
 // Function computeBounds() version that make use of the lemon MWM
 // ----------------------------------------------------------------------------
-
-void computeBounds(TRnaAlign & rnaAlign, TMapVect * lowerBound4Lemon)
-{
-    RnaStructureGraph & graph1 = rnaAlign.bppGraphH;
-    RnaStructureGraph & graph2 = rnaAlign.bppGraphV;
-    TScoreValue edgesProb, halfEdgesProb;
-//  Clear the maxProbScoreLine of the upper bound
-    for(unsigned i = 0; i < length(rnaAlign.upperBoundVect); ++i)
-    {
-        rnaAlign.upperBoundVect[i].maxProbScoreLine = 0;
-    }
-    for(unsigned i = 0; i < rnaAlign.maskIndex - 1; ++i)
-    {
-        String<unsigned> adjVect1;
-        getVertexAdjacencyVector(adjVect1, graph1.inter, rnaAlign.mask[i].first);
-        for (unsigned j = 0; j < length(adjVect1) && adjVect1[j] >= rnaAlign.mask[i].first; ++j)
-        {
-            for (unsigned w = i + 1; w < rnaAlign.maskIndex; ++w)
-            {
-                if (adjVect1[j] == rnaAlign.mask[w].first)
-                {
-                    String<unsigned> adjVect2;
-                    getVertexAdjacencyVector(adjVect2, graph2.inter, rnaAlign.mask[i].second);
-                    for (unsigned z = 0; z < length(adjVect2) && adjVect2[z] >= rnaAlign.mask[i].second; ++z)
-                    {
-                        if (adjVect2[z] == rnaAlign.mask[w].second)
-                        {
-                            edgesProb = (cargo(findEdge(graph1.inter, rnaAlign.mask[i].first, rnaAlign.mask[w].first)) +
-                                         cargo(findEdge(graph2.inter, rnaAlign.mask[i].second, rnaAlign.mask[w].second)));
-
-                            // Add edge for the LowerBoundGraph
-                            if (lowerBound4Lemon != NULL)
-                                (*lowerBound4Lemon)[i][w] = edgesProb;
-
-                            // Compute the half edge probability to be used for the upper bound level
-                            halfEdgesProb = edgesProb / 2.0;
-                            if (rnaAlign.upperBoundVect[rnaAlign.mask[i].second].maxProbScoreLine < halfEdgesProb)
-                            {
-                                fillBound(rnaAlign.upperBoundVect, rnaAlign, i, w, halfEdgesProb);
-                            }
-                            if (rnaAlign.upperBoundVect[rnaAlign.mask[w].second].maxProbScoreLine < halfEdgesProb )
-                            {
-                                fillBound(rnaAlign.upperBoundVect, rnaAlign, w, i, halfEdgesProb);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    // computeUpperBound(rnaAlign);
-}
-
-// ----------------------------------------------------------------------------
-// Function computeBounds() version that make use of an approximation of the MWM
-// ----------------------------------------------------------------------------
-
 /*
-//template <typename TRnaAlign>
-void computeBounds(TRnaAlign & rnaAlign)
+void computeBounds(RnaAlignmentTraits & traits, InteractionScoreMap * validInteractions) // upper bound computation
 {
-    RnaStructureGraph & graph1 = rnaAlign.bppGraphH;
-    RnaStructureGraph & graph2 = rnaAlign.bppGraphV;
-    TScoreValue edgesProb, halfEdgesProb;
-//  Clear the maxProbScoreLine of the upper bound
-    for (unsigned i = 0; i < length(rnaAlign.upperBoundVect); ++i)
+    Graph<Undirected<double> > & graph1 = traits.bppGraphH.inter;
+    Graph<Undirected<double> > & graph2 = traits.bppGraphV.inter;
+
+    // Clear the weight of the upper bound
+    for (std::size_t idx = 0; idx < length(traits.weightLineVect); ++idx)
     {
-        rnaAlign.upperBoundVect[i].maxProbScoreLine = 0;
+        traits.weightLineVect[idx].weight = 0; // reset best line score
     }
-    for (unsigned i = 0; i < rnaAlign.maskIndex - 1; ++i)
+
+    // iterate all lines that are present in the alignment
+    for (PositionPair const & line : traits.lines)
     {
-        String<unsigned> adjVect1;
-        getVertexAdjacencyVector(adjVect1, graph1.inter, rnaAlign.mask[i].first);
-        for (unsigned j = 0; j < length(adjVect1) && adjVect1[j] >= rnaAlign.mask[i].first; ++j)
+        // outgoing interactions in the first sequence
+        for (RnaAdjacencyIterator adj_it1(graph1, line.first); !atEnd(adj_it1); goNext(adj_it1))
         {
-            for (unsigned w = i + 1; w < rnaAlign.maskIndex; ++w)
+            double edgeWeight1 = cargo(findEdge(graph1, line.first, value(adj_it1)));
+
+            // outgoing interactions in the second sequence
+            for (RnaAdjacencyIterator adj_it2(graph2, line.second); !atEnd(adj_it2); goNext(adj_it2))
             {
-                if (adjVect1[j] == rnaAlign.mask[w].first)
+                double edgeWeight = edgeWeight1 + cargo(findEdge(graph2, line.second, value(adj_it2)));
+
+                // for lower bound the directed interactions must occur in both orientations
+                if (validInteractions != NULL && line.first < value(adj_it1))
                 {
-                    String<unsigned> adjVect2;
-                    getVertexAdjacencyVector(adjVect2, graph2.inter, rnaAlign.mask[i].second);
-                    for (unsigned z = 0; z < length(adjVect2) && adjVect2[z] >= rnaAlign.mask[i].second; ++z)
-                    {
-                        if (adjVect2[z] == rnaAlign.mask[w].second)
-                        {
-                            edgesProb = (cargo(findEdge(graph1.inter, rnaAlign.mask[i].first,
-                                                        rnaAlign.mask[w].first)) +
-                                         cargo(findEdge(graph2.inter, rnaAlign.mask[i].second,
-                                                        rnaAlign.mask[w].second)));
-                            // Compute the half edge probability to be used for the upper bound level
-                            halfEdgesProb = edgesProb / 2.0;
-                            if (rnaAlign.upperBoundVect[rnaAlign.mask[i].second].maxProbScoreLine < halfEdgesProb)
-                            {
-                                fillBound(rnaAlign.upperBoundVect, rnaAlign, i, w, halfEdgesProb);
-                            }
-                            if (rnaAlign.upperBoundVect[rnaAlign.mask[w].second].maxProbScoreLine < halfEdgesProb )
-                            {
-                                fillBound(rnaAlign.upperBoundVect, rnaAlign, w, i, halfEdgesProb);
-                            }
-                        }
+                    for (PositionPair const & pairline : traits.lines)
+                    { //TODO make this loop more efficient
+                        if (pairline.first == value(adj_it1) && pairline.second == value(adj_it2))
+                            (*validInteractions)[line.first][pairline.first] = edgeWeight;
                     }
+                }
+
+//                std::cerr << "Interaction match: " << line.first+1 << " - " << line.second+1
+//                          << " | " << value(adj_it1)+1 << " - " << value(adj_it2)+1 << "\tprob = "
+//                          << edgeWeight1 << " + " << edgeWeight-edgeWeight1 << "\n";
+
+                // for upper bound do not care if interactions are closed by a line
+                if (traits.weightLineVect[line.second].weight < edgeWeight / 2.0)
+                {
+                    traits.weightLineVect[line.second].weight = edgeWeight / 2.0;
+                    traits.weightLineVect[line.second].seq1Index = line.first;
+                    traits.weightLineVect[line.second].lineL.first = value(adj_it1);
+                    traits.weightLineVect[line.second].lineL.second = value(adj_it2);
+//                    std::cerr << "updated\n";
                 }
             }
         }
     }
-    // computeBound(rnaAlign);
-}
-
-
-// ----------------------------------------------------------------------------
-// Function computeBoundsTest()
-// ----------------------------------------------------------------------------
-
-//template <typename TOption, typename TRnaAlign, typename TMapVect>
-void computeBoundsTest(TRnaAlign & rnaAlign, TMapVect & lowerBound4Lemon)
-{
-    RnaStructureGraph & graph1 = rnaAlign.bppGraphH;
-    RnaStructureGraph & graph2 = rnaAlign.bppGraphV;
-    TScoreValue edgesProb, halfEdgesProb;
-//  Clear the maxProbScoreLine of the upper bound
-    for(unsigned i = 0; i < length(rnaAlign.upperBoundVect); ++i)
-    {
-        rnaAlign.upperBoundVect[i].maxProbScoreLine = 0;
-//        std::cout << rnaAlign.upperBoundVect[i].maxProbScoreLine << "\t";
-    }
-    std::cout << std::endl;
-    clearVertices(rnaAlign.lowerBoundGraph);
-    // Add vertex for the LowerBoundGraph
-    for(unsigned i = 0; i < rnaAlign.maskIndex; ++i)
-    {
-        addVertex(rnaAlign.lowerBoundGraph);
-    }
-    unsigned ll = 0;
-    for (unsigned i = 0; i < rnaAlign.maskIndex - 1; ++i)
-    {
-        String<unsigned> adjVect1;
-        getVertexAdjacencyVector(adjVect1, graph1.inter, rnaAlign.mask[i].first);
-        for(unsigned j = 0; j< length(adjVect1) && adjVect1[j] >= rnaAlign.mask[i].first; ++j)
-        {
-            for (unsigned w = i + 1; w < rnaAlign.maskIndex; ++w)
-            {
-                if (adjVect1[j] == rnaAlign.mask[w].first)
-                {
-                    std::cout << "Couple of nt at position " << i << " of mask = " << rnaAlign.mask[i].first << ":"
-                              << rnaAlign.mask[i].second << std::endl;
-                    std::cout << "Couple of nt at position " << w << " of mask = " << rnaAlign.mask[w].first << ":"
-                              << rnaAlign.mask[w].second << std::endl;
-                    std::cout << "Probability on seq1 " << rnaAlign.mask[i].first << ":" << rnaAlign.mask[w].first
-                              << " = " << cargo(findEdge(graph1.inter, rnaAlign.mask[i].first,
-                                                         rnaAlign.mask[w].first)) << std::endl;
-                    String<unsigned> adjVect2;
-                    getVertexAdjacencyVector(adjVect2, graph2.inter, rnaAlign.mask[i].second);
-                    for (unsigned z = 0; z < length(adjVect2) && adjVect2[z] >= rnaAlign.mask[i].second; ++z)
-                    {
-                        if (adjVect2[z] == rnaAlign.mask[w].second)
-                        {
-                            std::cout << "Probability on seq2 " << rnaAlign.mask[w].second << ":"
-                                      << rnaAlign.mask[i].second << " = "
-                                      << cargo(findEdge(graph2.inter, rnaAlign.mask[i].second,
-                                                        rnaAlign.mask[w].second)) << std::endl;
-                            edgesProb = (cargo(findEdge(graph1.inter, rnaAlign.mask[i].first, rnaAlign.mask[w].first)) +
-                                         cargo(findEdge(graph2.inter, rnaAlign.mask[i].second, rnaAlign.mask[w].second)));
-                            // Add edge for the LowerBoundGraph
-                            addEdge(rnaAlign.lowerBoundGraph, i, w, edgesProb);
-                            lowerBound4Lemon[i][w] = edgesProb;
-                            ++ll;
-                            // Compute the half edge probability to be used for the upper bound level
-                            halfEdgesProb = edgesProb / 2.0;
-                            // std::cout << "Sum of probabilities = " << edgesProb << std::endl;
-
-                            if (rnaAlign.upperBoundVect[rnaAlign.mask[i].second].maxProbScoreLine < halfEdgesProb)
-                            {
-                                std::cout << "Previous prob of pair " << rnaAlign.mask[i].second << " = "
-                                          << rnaAlign.upperBoundVect[rnaAlign.mask[i].second].maxProbScoreLine
-                                          << std::endl;
-                                fillBound(rnaAlign.upperBoundVect, rnaAlign, i, w, halfEdgesProb);
-                                std::cout << "Updated prob of pair " << rnaAlign.mask[i].second << " = "
-                                          << rnaAlign.upperBoundVect[rnaAlign.mask[i].second].maxProbScoreLine
-                                          << std::endl;
-                            }
-                            if ( rnaAlign.upperBoundVect[rnaAlign.mask[w].second].maxProbScoreLine < halfEdgesProb )
-                            {
-                                std::cout << "Previous prob of pair " << rnaAlign.mask[w].second << " = "
-                                          << rnaAlign.upperBoundVect[rnaAlign.mask[w].second].maxProbScoreLine
-                                          << std::endl;
-                                fillBound(rnaAlign.upperBoundVect, rnaAlign, w, i, halfEdgesProb);
-                                std::cout << "Updated prob of pair " << rnaAlign.mask[w].second << " = "
-                                          << rnaAlign.upperBoundVect[rnaAlign.mask[w].second].maxProbScoreLine
-                                          << std::endl;
-                            }
-                            std::cout << adjVect2[z] << "\t";
-                            std::cout << rnaAlign.mask[i].first << ":" << rnaAlign.mask[i].second << std::endl;
-                            std::cout << rnaAlign.mask[w].first << ":" << rnaAlign.mask[w].second << std::endl;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    std::cout << "Number of edges = " << ll << std::endl;
-    std::cout << "Upper bound vector of size " << length(rnaAlign.upperBoundVect) << std::endl;
-
-    computeBound(rnaAlign);
-
-    std::cout << "upperBound = " << rnaAlign.upperBound << std::endl;
-    std::cout << "lowerBound = " << rnaAlign.lowerBound << std::endl;
-    std::cout << "lowerBound from lemon::MWM primal = " << rnaAlign.lowerLemonBound.mwmPrimal << " dual = "
-              << rnaAlign.lowerLemonBound.mwmDual << std::endl;
-    std::cout << rnaAlign.lowerBoundGraph << std::endl;
 }
 */
 
-void computeLowerBoundGreedy(TMapVect & interactions, TRnaAlign & rnaAlign)
+double computeLowerBoundGreedy(InteractionScoreMap & interactions)
 {
-    TLowerBoundGraph graph;
-
     // add vertices
-    forEach(interactions, [&graph] (TMap const &) { addVertex(graph); });
+    RnaInteractionGraph graph;
+    forEach(interactions, [&graph] (ScMap const &) { addVertex(graph); });
 
     // add edges
     for (unsigned vertexIdx = 0; vertexIdx < length(interactions); ++vertexIdx)
-        for (auto edgeCargo = interactions[vertexIdx].begin(); edgeCargo != interactions[vertexIdx].end(); ++edgeCargo)
-            addEdge(graph, vertexIdx, edgeCargo->first, edgeCargo->second);
+        for (ScMap::iterator mapIt = interactions[vertexIdx].begin(); mapIt != interactions[vertexIdx].end(); ++mapIt)
+            addEdge(graph, vertexIdx, mapIt->first, mapIt->second);
 
-    rnaAlign.lowerGreedyBound = maximumWeightedMatchingGreedy<5>(graph);
+    return maximumWeightedMatchingGreedy<5>(graph);
 };
 
-void saveBestAlignMinBound(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore, unsigned index)
+// ----------------------------------------------------------------------------
+// Function saveBestAlignMinBound()
+// ----------------------------------------------------------------------------
+
+
+void saveBestAlignMinBound(RnaAlignmentTraits & traits, RnaAlignment const & align, double alignScore, unsigned index)
 {
-//    if ((rnaAlign.upperBound - rnaAlign.lowerBound) < (rnaAlign.upperMinBound - rnaAlign.lowerMinBound))
-    if( rnaAlign.stepSize <= rnaAlign.forMinBound.stepSizeBound)  //TODO check if this <= is expensive
+//    if ((traits.upperBound - traits.lowerBound) < (traits.upperMinBound - traits.lowerMinBound))
+    if (traits.stepSize < traits.forMinBound.stepSizeBound)  //TODO check if this <= is expensive
     {
-        rnaAlign.forMinBound.it = index; //to be used for the best lower bound
-        rnaAlign.forMinBound.lowerBound = rnaAlign.lowerBound;
-        rnaAlign.forMinBound.upperBound = rnaAlign.upperBound;
-        rnaAlign.forMinBound.stepSizeBound = rnaAlign.stepSize;
-        rnaAlign.forMinBound.bestAlign = align;
-        rnaAlign.forMinBound.bestAlignScore = alignScore;
-        rnaAlign.forMinBound.upperBoundVect = rnaAlign.upperBoundVect;
-        rnaAlign.forMinBound.mask = rnaAlign.mask;
-        rnaAlign.forMinBound.maskIndex = rnaAlign.maskIndex;
-    }
-}
-void saveBestAlignScore(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore, int index)
-{
-//    if ((rnaAlign.upperBound - rnaAlign.lowerBound) < (rnaAlign.upperMinBound - rnaAlign.lowerMinBound))
-    if( rnaAlign.forScore.bestAlignScore < alignScore)  //TODO check if this < is expensive
-    {
-        rnaAlign.forScore.it = index; //to be used for the best lower bound
-        rnaAlign.forScore.lowerBound = rnaAlign.lowerBound;
-        rnaAlign.forScore.upperBound = rnaAlign.upperBound;
-        rnaAlign.forScore.stepSizeBound = rnaAlign.stepSize;
-        rnaAlign.forScore.bestAlign = align;
-        rnaAlign.forScore.bestAlignScore = alignScore;
-        rnaAlign.forScore.upperBoundVect = rnaAlign.upperBoundVect;
-        rnaAlign.forScore.mask = rnaAlign.mask;
-        rnaAlign.forScore.maskIndex = rnaAlign.maskIndex;
+//        std::cerr << "update best min bound" << std::endl;
+        traits.forMinBound.it = index; //to be used for the best lower bound
+        traits.forMinBound.lowerBound = traits.lowerBound;
+        traits.forMinBound.upperBound = traits.upperBound;
+        traits.forMinBound.stepSizeBound = traits.stepSize;
+        traits.forMinBound.bestAlign = align;
+        traits.forMinBound.bestAlignScore = alignScore;
+//        traits.forMinBound.weightLineVect = traits.weightLineVect;
+        traits.forMinBound.lines = traits.lines;
     }
 }
 
-void saveBestAligns(TRnaAlign & rnaAlign, TAlign const & align, TScoreValue alignScore, int index)
+// ----------------------------------------------------------------------------
+// Function saveBestAlignScore()
+// ----------------------------------------------------------------------------
+/*
+void saveBestAlignScore(RnaAlignmentTraits & traits, RnaAlignment const & align, double alignScore, int index)
 {
-    saveBestAlignMinBound(rnaAlign, align, alignScore, index);
-    saveBestAlignScore(rnaAlign, align, alignScore, index);
+//    if ((traits.upperBound - traits.lowerBound) < (traits.upperMinBound - traits.lowerMinBound))
+    if (traits.forScore.bestAlignScore < alignScore)
+    {
+//        std::cerr << "update best score" << std::endl;
+        traits.forScore.it = index; //to be used for the best lower bound
+        traits.forScore.lowerBound = traits.lowerBound;
+        traits.forScore.upperBound = traits.upperBound;
+        traits.forScore.stepSizeBound = traits.stepSize;
+        traits.forScore.bestAlign = align;
+        traits.forScore.bestAlignScore = alignScore;
+//        traits.forScore.weightLineVect = traits.weightLineVect;
+        traits.forScore.lines = traits.lines;
+    }
+}
+ */
+
+void saveBestAlignMinDiff(RnaAlignmentTraits & traits, RnaAlignment const & align, double alignScore, int index)
+{
+    if (traits.bestUpperBound - traits.bestLowerBound < traits.forMinDiff.upperBound - traits.forMinDiff.lowerBound)
+    {
+        traits.forMinDiff.it = index; //to be used for the best lower bound
+        traits.forMinDiff.lowerBound = traits.bestLowerBound;
+        traits.forMinDiff.upperBound = traits.bestUpperBound;
+        traits.forMinDiff.stepSizeBound = traits.stepSize;
+        traits.forMinDiff.bestAlign = align;
+        traits.forMinDiff.bestAlignScore = alignScore;
+//        traits.forMinDiff.weightLineVect = traits.weightLineVect;
+        traits.forMinDiff.lines = traits.lines;
+    }
 }
 
+void saveBestAligns(RnaAlignmentTraits & traits, RnaAlignment const & align, double alignScore, int index)
+{
+    saveBestAlignMinDiff(traits, align, alignScore, index);
+    saveBestAlignMinBound(traits, align, alignScore, index);
+//    saveBestAlignScore(traits, align, alignScore, index);
+}
 
-void updateLambda(TRnaAlign & rnaAlign) {
-//    std::cout << "updateLambda function" << std::endl;
-    for (size_t i = 0; i < length(rnaAlign.upperBoundVect); ++i) {
-        struct boundStruct const & ub = rnaAlign.upperBoundVect[i];
-
-        if (ub.maxProbScoreLine > 0) {
-            struct lambWeightStruct & lambWeight = rnaAlign.lamb[ub.seq1Index].map[i];
-
-            // the edges are not paired
-            if (ub.seq1Index != rnaAlign.upperBoundVect[ub.seq1IndexPairLine].seq1IndexPairLine)
-            {
-                if (ub.seq1Index < ub.seq1IndexPairLine)
-                {
-// TODO check if this strategy is properly working a positive score is assigned to the left-side alignments.
-// Maybe a double side strategy should be tested
-                    lambWeight.step += rnaAlign.stepSize;
-                    // Note, the default initializer is callet the fist time that set the value to 0
-                } else {
-                    lambWeight.step -= rnaAlign.stepSize;
-                    // Note, the default initializer is callet the fist time that set the value to 0
-                }
-            }
-// Save the maximum interaction weight to be used for the computation of profit of a line
-            if (lambWeight.maxProbScoreLine < ub.maxProbScoreLine)
-            {
-                lambWeight.maxProbScoreLine = ub.maxProbScoreLine;
-                lambWeight.seq1IndexPairLine = ub.seq1IndexPairLine;
-                lambWeight.seq2IndexPairLine = ub.seq2IndexPairLine;
-            }
+void findMaxWeight(double & maxWeight, unsigned & partnerIndex, RnaInteractionGraph const & graph, unsigned position)
+{
+    for (RnaAdjacencyIterator adj_it(graph, position); !atEnd(adj_it); goNext(adj_it))
+    {
+        double edgeWeight = cargo(findEdge(graph, position, value(adj_it)));
+        if (maxWeight < edgeWeight)
+        {
+            maxWeight = edgeWeight;
+            partnerIndex = value(adj_it);
         }
     }
 }
+
+// ----------------------------------------------------------------------------
+// Function updateClosedLoops()
+// ----------------------------------------------------------------------------
+
+void updateClosedLoops(RnaAlignmentTraits & traits)
+{
+//    int tmpIndex = -1;
+    for (PositionPair const & line : traits.lines)
+    {
+        if (traits.interactions[line.first].count(line.second) > 0)
+        {
+            RnaInteraction & interaction = traits.interactions[line.first][line.second];
+            if (interaction.lineL.first ==
+                traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.first
+                && interaction.lineL.second ==
+                   traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.second)
+            {
+                interaction.closedLoop = true;
+/*                if (saveFoundInterPair) //TODO check if this lambda must be updated with the closed loop or not
+                    // if the map is not empty means that the line have been already evaluated in a previous iteration
+                {
+                    traits.interactions[interaction.lineM.first][interaction.lineM.second].closedLoop = true;
+                }
+*/            }
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Function evaluateInteractions()
+// ----------------------------------------------------------------------------
+
+void evaluateInteractions(RnaAlignmentTraits & traits, unsigned const & iter)
+{
+    Graph<Undirected<double> > & graph1 = traits.bppGraphH.inter;
+    Graph<Undirected<double> > & graph2 = traits.bppGraphV.inter;
+
+    bool flagUpdateClosedLoops = false;
+    // iterate all lines that are present in the alignment
+    for (PositionPair const & line : traits.lines)
+    {
+//        std::cerr << "graph degree " << degree(graph1, line.first) << " - " << degree(graph2, line.second) << std::endl;
+        // outgoing interactions in the first sequence
+        bool proceed = false;
+        if (degree(graph1, line.first) > 0 && degree(graph2, line.second) > 0)
+        {
+            if (traits.interactions[line.first].count(line.second) == 0)
+            {
+                proceed = true;
+            } else if (traits.interactions[line.first][line.second].fromUBPairing)
+            {
+                proceed = true;
+            }
+            traits.interactions[line.first][line.second].iterUpdate = iter;
+            if (proceed)
+            {
+                RnaInteraction & interaction = traits.interactions[line.first][line.second];
+                findMaxWeight(interaction.maxProbScoreLine1, interaction.lineM.first, graph1, line.first);
+                interaction.lineL.first = line.first;
+//            std::cerr << interaction.lineL.first << " : " << interaction.lineM.first << " | " << interaction.maxProbScoreLine1
+//                      << " - " << line.second << std::endl;
+                findMaxWeight(interaction.maxProbScoreLine2, interaction.lineM.second, graph2, line.second);
+                interaction.lineL.second = line.second;
+//            std::cerr << interaction.lineL.second << " : " << interaction.lineM.second << " | " << interaction.maxProbScoreLine2
+//                      << " - " << line.first << std::endl;
+                interaction.weight = (interaction.maxProbScoreLine1 + interaction.maxProbScoreLine2) / 2;
+
+//                std::cerr << interaction.lineL.first << " : " << interaction.lineL.second << " = "
+//                          << interaction.weight << " | " << interaction.lineM.first << " : "
+//                          << interaction.lineM.second << " (" << interaction.fromUBPairing << ")" << std::endl;
+                interaction.fromUBPairing = false;
+                flagUpdateClosedLoops = true;
+                if (true) //TODO probably this must be the default and removed from the options
+                    // if the map is not empty means that the line have been already evaluated in a previous iteration
+                {
+                    bool proceed2 = false;
+                    if (traits.interactions[interaction.lineM.first].count(interaction.lineM.second) == 0)
+                    {
+                        proceed2 = true;
+                    } else if (traits.interactions[interaction.lineM.first][interaction.lineM.second].weight < interaction.weight)
+                    {
+                        proceed2 = true;
+                    }
+                    //traits.interactions[interaction.lineM.first][interaction.lineM.second].iterUpdate = iter; //TODO check if needed
+                    if (proceed2)
+                    {
+                        RnaInteraction & pair = traits.interactions[interaction.lineM.first][interaction.lineM.second];
+                        pair.lineL.first = interaction.lineM.first;
+                        pair.lineL.second = interaction.lineM.second;
+                        pair.lineM.first = interaction.lineL.first;
+                        pair.lineM.second = interaction.lineL.second;
+                        pair.weight = interaction.weight;
+                        pair.fromUBPairing = true;
+
+//                        std::cerr << pair.lineL.first << " : " << pair.lineL.second << " = "
+//                                  << pair.weight << " | " << pair.lineM.first << " : "
+//                                  << pair.lineM.second << " (" << pair.fromUBPairing << ")" << std::endl;
+                    }
+                }
+            }
+        }
+    }
+    if (flagUpdateClosedLoops)
+        updateClosedLoops(traits);
+}
+
+// ----------------------------------------------------------------------------
+// Function computeNumberOfSubgradients()
+// ----------------------------------------------------------------------------
+
+void computeNumberOfSubgradients(RnaAlignmentTraits & traits, seqan::String<PositionPair> & unclosedLoops)
+{
+    traits.numberOfSubgradients = 0;
+    for (PositionPair const & line : traits.lines)
+    {
+        if (traits.interactions[line.first].count(line.second) > 0)
+        {
+            bool stucturalLine = false;
+/*
+            RnaInteraction &lambdaL = traits.interactions[lineL.first][lineL.second];
+
+            bool closedCircle = false;
+            for (PositionPair const & lineM : traits.lines)
+            {
+                if (traits.interactions[lineM.first].count(lineM.second) > 0)
+                    if (lambdaL.lineM.first == lineM.first && lambdaL.lineM.second == lineM.second)
+                        closedCircle = true;
+            }
+            if (!closedCircle)
+            {
+                traits.numberOfSubgradients += 2;
+                appendValue(unclosedLoops, lineL);
+            }
+*/
+            RnaInteraction & interaction = traits.interactions[line.first][line.second];
+            if (interaction.closedLoop)
+            {
+                if (interaction.iterUpdate >= 0 &&
+                    interaction.iterUpdate == traits.interactions[interaction.lineM.first][interaction.lineM.second].iterUpdate)
+                {
+                    if (interaction.lineL.first !=
+                        traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.first
+                        || interaction.lineL.second !=
+                           traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.second)
+                    {
+                        stucturalLine = true;
+                    }
+                }
+                else
+                {
+                    stucturalLine = true;
+                }
+            }
+            else
+            {
+                stucturalLine = true;
+            }
+            if (stucturalLine)
+            {
+                traits.numberOfSubgradients += 2;
+                appendValue(unclosedLoops, line);
+            }
+        }
+    }
+    std::cerr << "numberOfSubgradients = " << traits.numberOfSubgradients << std::endl;
+}
+
+// ----------------------------------------------------------------------------
+// Function updateLambdaValues()
+// ----------------------------------------------------------------------------
+
+void updateLambdaValues(RnaAlignmentTraits & traits, seqan::String<PositionPair> const & unclosedLoops)
+{
+    for (PositionPair const & line : unclosedLoops)
+    {
+        if (traits.interactions[line.first].count(line.second) > 0)
+        {
+            RnaInteraction & interaction = traits.interactions[line.first][line.second];
+            if (true || interaction.lineL.first !=
+                traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.first
+                || interaction.lineL.second !=
+                   traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.second)
+            {
+                interaction.lambdaValue -= traits.stepSize;
+                traits.interactions[interaction.lineM.first][interaction.lineM.second].lambdaValue += traits.stepSize;
+            }
+/*
+            std::cout << line.first << " : " << line.second << " = " << interaction.weight << " -> "<< interaction.step << " | ";
+            std::cout << interaction.lineM.first << " : "
+                      << interaction.lineM.second << " = "
+                      << traits.interactions[interaction.lineM.first][interaction.lineM.second].weight << " -> "
+                      << traits.interactions[interaction.lineM.first][interaction.lineM.second].step
+                      << std::endl;
+*/
+        }
+    }
+}
+
 #endif //_INCLUDE_ALIGNMENT_EDGES_H_

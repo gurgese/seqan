@@ -46,6 +46,10 @@
 // std headers
 // ----------------------------------------------------------------------------
 
+#include <limits>
+
+#include <seqan/rna_io.h>
+
 using namespace seqan;
 
 // ============================================================================
@@ -53,11 +57,10 @@ using namespace seqan;
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// Function _readRnaInputFile()
+// Function readRnaFile()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-void _readRnaInputFile(RnaStructContents & filecontents, CharString filename, TOption const & options)
+void readRnaFile(RnaStructContents & filecontents, CharString filename, LaraOptions const & options)
 {
     if (empty(filename))
         return;
@@ -65,19 +68,22 @@ void _readRnaInputFile(RnaStructContents & filecontents, CharString filename, TO
     RnaStructFileIn rnaStructFile;
     if (open(rnaStructFile, toCString(filename), OPEN_RDONLY))
     {
-        _V(options, "Input file is RnaStruct.");
-        readRecords(filecontents, rnaStructFile, 100000u);
+        _VVV(options, "Input file is RnaStruct.");
+        readRecords(filecontents, rnaStructFile, std::numeric_limits<unsigned>::max());
         close(rnaStructFile);
     }
     else
     {
-        _V(options, "Input file is Fasta/Fastq.");
+        // Read the file.
+        _VVV(options, "Input file is Fasta/Fastq.");
         SeqFileIn seqFileIn(toCString(filename));
         StringSet<CharString> ids;
         StringSet<IupacString> seqs;
         StringSet<CharString> quals;
         readRecords(ids, seqs, quals, seqFileIn);
         close(seqFileIn);
+
+        // Fill the data structures: identifier and sequence.
         resize(filecontents.records, length(ids));
         SEQAN_ASSERT_EQ(length(ids), length(seqs));
         for (typename Size<StringSet<CharString> >::Type idx = 0u; idx < length(ids); ++idx)
@@ -85,6 +91,7 @@ void _readRnaInputFile(RnaStructContents & filecontents, CharString filename, TO
             filecontents.records[idx].name = ids[idx];
             filecontents.records[idx].sequence = convert<Rna5String>(seqs[idx]);
         }
+        // For FastQ files: add quality annotation.
         if (length(quals) == length(ids))
         {
             for (typename Size<StringSet<CharString> >::Type idx = 0u; idx < length(ids); ++idx)
@@ -97,34 +104,55 @@ void _readRnaInputFile(RnaStructContents & filecontents, CharString filename, TO
 // Function plotOutput()
 // ----------------------------------------------------------------------------
 
-template <typename TOption>
-void plotOutput(TOption const & options, TRnaAlignVect & rnaAligns)
+void plotAlignments(LaraOptions const & options, RnaAlignmentTraitsVector & alignmentTraits)
 {
-    for (unsigned i = 0; i < length(rnaAligns); ++i)
+    for (RnaAlignmentTraits const & traits : alignmentTraits)
     {
+/*
         _VV(options, "******* For Minimum Stepsize *******" << std::endl);
+        _VV(options, "Alignment of sequences " << traits.idBppSeqH << ":" << traits.idBppSeqV);
+        _VV(options, "Iteration where MinStepSize has been found " << traits.forMinBound.it);
+        _VV(options, "Best Lower bound is " << traits.forMinBound.lowerBound);
+        _VV(options, "Best Upper bound is " << traits.forMinBound.upperBound);
+        _VV(options, "Minimum step size is " << traits.forMinBound.stepSizeBound);
+        _VV(options, "Best alignment based on the Min Bounds is " << traits.forMinBound.bestAlignScore << "\n"
+                                                                  <<  traits.forMinBound.bestAlign);
 
-        _VV(options, "Alignment of sequences " << rnaAligns[i].idBppSeqH << ":" << rnaAligns[i].idBppSeqV);
-        _VV(options, "Iteration where MinStepSize has been found " << rnaAligns[i].forMinBound.it);
-        _VV(options, "Best alignment based on the Min Bounds is " << rnaAligns[i].forMinBound.bestAlignScore << "\n" <<  rnaAligns[i].forMinBound.bestAlign);
-        _VV(options, "Best Lower bound is " << rnaAligns[i].forMinBound.lowerBound);
-        _VV(options, "Best Upper bound is " << rnaAligns[i].forMinBound.upperBound);
-        _VV(options, "Minumum step size is " << rnaAligns[i].forMinBound.stepSizeBound);
-        _VV(options, "UpperBoundVect can be plotted " );
-
-        _VV(options, "The step size to be used for Lambda at last iteration is " << rnaAligns[i].stepSize << "\n\n");
+        _VV(options, "The step size to be used for Lambda at last iteration is " << traits.stepSize << "\n");
 
         _VV(options, "+++++++ For Maximum Alignment Score +++++++" << std::endl);
-
-        _VV(options, "Alignment of sequences " << rnaAligns[i].idBppSeqH << ":" << rnaAligns[i].idBppSeqV);
-        _VV(options, "Iteration where MinStepSize has been found " << rnaAligns[i].forScore.it);
-        _VV(options, "Best alignment based on the Score is " << rnaAligns[i].forScore.bestAlignScore << "\n" <<  rnaAligns[i].forMinBound.bestAlign);
-        _VV(options, "Best Lower bound is " << rnaAligns[i].forScore.lowerBound);
-        _VV(options, "Best Upper bound is " << rnaAligns[i].forScore.upperBound);
-        _VV(options, "Minumum step size is " << rnaAligns[i].forScore.stepSizeBound);
-        _VV(options, "UpperBoundVect can be plotted ");
-
-        _VV(options, "The step size to be used for Lambda at last iteration is " << rnaAligns[i].stepSize << "\n\n");
+        _VV(options, "Alignment of sequences " << traits.idBppSeqH << ":" << traits.idBppSeqV);
+        _VV(options, "Iteration where best score has been found " << traits.forScore.it);
+        _VV(options, "Best Lower bound is " << traits.forScore.lowerBound);
+        _VV(options, "Best Upper bound is " << traits.forScore.upperBound);
+        _VV(options, "Minimum step size is " << traits.forScore.stepSizeBound);
+        _VV(options, "The step size to be used for Lambda at last iteration is " << traits.stepSize << "\n");
+        _VV(options, "Best alignment based on the Score is " << traits.forScore.bestAlignScore << "\n"
+                                                             << traits.forScore.bestAlign);
+ */
+        _VV(options, "******* For Closest Bounds *******" << std::endl);
+        _VV(options, "Alignment of sequences " << traits.sequenceIndices.first << ":" << traits.sequenceIndices.second);
+        _VV(options, "Iteration where the closest bounds have been found " << traits.forMinDiff.it);
+        _VV(options, "Best Lower bound is " << traits.forMinDiff.lowerBound);
+        _VV(options, "Best Upper bound is " << traits.forMinDiff.upperBound);
+        _VV(options, "Minimum step size is " << traits.forMinDiff.stepSizeBound);
+        _VV(options, "Best alignment based on the the closest Bounds is " << traits.forMinDiff.bestAlignScore << "\n"
+                                                                          << traits.forMinDiff.bestAlign);
     }
 }
+
+CharString getEbpseqString(RnaStructContents & filecontents)
+{
+    String<char> outstr;
+    if (length(filecontents.records) == 0)
+        return outstr;
+
+    RnaIOContext context;
+    createPseudoHeader(filecontents.header, filecontents.records);
+    writeHeader(outstr, filecontents.header, context, Ebpseq());
+    for (RnaRecord & rec : filecontents.records)
+        writeRecord(outstr, rec, context, Ebpseq());
+    return outstr;
+}
+
 #endif //_INCLUDE_LARA_IO_H_

@@ -472,6 +472,7 @@ inline void createPseudoHeader(RnaHeader & header, std::vector<RnaRecord> & reco
     for (TSizeRnaRecordVector idx = 0; idx < length(records); ++idx)
     {
         records[idx].recordID = static_cast<std::uint32_t>(idx);
+        records[idx].seqLen = length(records[idx].sequence);
         if (!empty(records[idx].comment))
         {
             if (!empty(header.description))

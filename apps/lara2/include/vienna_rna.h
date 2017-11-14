@@ -69,76 +69,81 @@ extern "C" {
 // Function computeBppMatrix()
 // ----------------------------------------------------------------------------
 
-template <typename TRnaStruct, typename TOption>
-void computeBppMatrix(TRnaStruct & rnaSeq, TOption const & options)
+void computeBppMatrix(RnaRecord & rnaRecord, double thrBppm, bool logStructureScoring)
 {
-    char *structure = new char[length(rnaSeq.sequence) + 1];
-    vrna_md_t md_p;
-    RnaStructureGraph bppMatrGraph, fixedGraph;
+    RnaStructureGraph bppMatrGraph;
 
-//  apply default model details
+    // apply default model details
+    vrna_md_t md_p;
     set_model_details(&md_p);
 
-// Create a c-style string object for str:
-    String<char, CStyle> seq;
-
-    seq = rnaSeq.sequence;
-//  get a vrna_fold_compound with MFE and PF DP matrices and default model details
+    // get a vrna_fold_compound with MFE and PF DP matrices and default model details
+    String<char, CStyle> seq = rnaRecord.sequence;
     vrna_fold_compound_t *vc = vrna_fold_compound(toCString(seq), &md_p, VRNA_OPTION_MFE | VRNA_OPTION_PF);
-    double gibbs = (double)vrna_pf(vc, structure); //FIXME the structure is not well saved
 
-    vrna_plist_t *pl1, *ptr;
-    pl1 = vrna_plist_from_probs(vc, options.thrBppm);
+    // save gibbs free energy
+    char structure[length(rnaRecord.sequence) + 1];
+    float gibbs = (double)vrna_pf(vc, structure);
+    bppMatrGraph.energy = gibbs;
 
-// get size of pl1
+    vrna_plist_t *pl1;
+    pl1 = vrna_plist_from_probs(vc, thrBppm);
+
+    // get size of pl1
     unsigned size;
-    for(size = 0, ptr = pl1; ptr->i; size++, ptr++);
-    bppMatrGraph.specs = "vrna_fold_compound(<Sequence>, <Vienna Model Details>, VRNA_OPTION_MFE | VRNA_OPTION_PF)";
+    vrna_plist_t *ptr = pl1;
+    for (size = 0u; ptr->i; ++size, ++ptr);
+
+    // define string for graph specs
     //TODO this data must be formatted in a smart way
-    for(unsigned i=0; i<length(rnaSeq.sequence);++i)
-    {
+    bppMatrGraph.specs = "vrna_fold_compound(<Sequence>, <Vienna Model Details>, VRNA_OPTION_MFE | VRNA_OPTION_PF)";
+
+    // add vertices to graph
+    for (unsigned idx=0; idx < length(rnaRecord.sequence); ++idx)
         addVertex(bppMatrGraph.inter);
-    }
-    if(options.structureScoring == LOGARITHMIC)
+
+    if (logStructureScoring)
     {
+        /*
         double minProb = 1.0;
-        for(unsigned i=0; i<size;++i)
+        for (unsigned i = 0; i < size; ++i)
         {
-            if( pl1[i].p < minProb )
+            if (pl1[i].p < minProb)
                 minProb = pl1[i].p;
         }
-        for(unsigned i=0; i<size;++i)
+         */
+        double const minProb = 0.003; // taken from LISA > Lara
+        for (unsigned i = 0; i < size; ++i)
         {
-            SEQAN_ASSERT(pl1[i].i > 0 && static_cast<unsigned>(pl1[i].i) <= length(rnaSeq.sequence));
-            SEQAN_ASSERT(pl1[i].j > 0 && static_cast<unsigned>(pl1[i].j) <= length(rnaSeq.sequence));
-// convert indices from range 1..length to 0..length-1
-            addEdge(bppMatrGraph.inter, pl1[i].i - 1, pl1[i].j - 1, log(pl1[i].p/minProb));
+            SEQAN_ASSERT(pl1[i].i > 0 && static_cast<unsigned>(pl1[i].i) <= length(rnaRecord.sequence));
+            SEQAN_ASSERT(pl1[i].j > 0 && static_cast<unsigned>(pl1[i].j) <= length(rnaRecord.sequence));
+            // convert indices from range 1..length to 0..length-1
+            if (pl1[i].p > minProb)
+                addEdge(bppMatrGraph.inter, pl1[i].i - 1, pl1[i].j - 1, log(pl1[i].p/minProb));
         }
     }
     else
     {
-        for(unsigned i=0; i<size;++i)
+        for (unsigned i = 0; i < size; ++i)
         {
-            SEQAN_ASSERT(pl1[i].i > 0 && static_cast<unsigned>(pl1[i].i) <= length(rnaSeq.sequence));
-            SEQAN_ASSERT(pl1[i].j > 0 && static_cast<unsigned>(pl1[i].j) <= length(rnaSeq.sequence));
-// convert indices from range 1..length to 0..length-1
+            SEQAN_ASSERT(pl1[i].i > 0 && static_cast<unsigned>(pl1[i].i) <= length(rnaRecord.sequence));
+            SEQAN_ASSERT(pl1[i].j > 0 && static_cast<unsigned>(pl1[i].j) <= length(rnaRecord.sequence));
+            // convert indices from range 1..length to 0..length-1
             addEdge(bppMatrGraph.inter, pl1[i].i - 1, pl1[i].j - 1, pl1[i].p);
         }
     }
-    append(rnaSeq.bppMatrGraphs, bppMatrGraph);
+    append(rnaRecord.bppMatrGraphs, bppMatrGraph);
+
+    /*
+    // fixed graph: add specs and energy
+    RnaStructureGraph fixedGraph;
     fixedGraph.specs = "vrna_fold_compound(<Sequence>, <Vienna Model Details>, VRNA_OPTION_MFE | VRNA_OPTION_PF)";
     fixedGraph.energy = gibbs;
-//TODO this data must be formatted in a smart way
-// FIXME the vienna representation should be supported before to use this piece of code
-    append(rnaSeq.fixedGraphs, fixedGraph);
-//    if(options.verbose > 2)
-//        std::cout << "\n" << rnaSeq.bppMatrGraphs[0].inter  << std::endl;
-// TODO the graph to be used must be placed at position 0
+    append(rnaRecord.fixedGraphs, fixedGraph);
+    */
 
-// free memory occupied by vrna_fold_compound
+    // free memory occupied by vrna_fold_compound
     vrna_fold_compound_free(vc);
-// clean up
-    delete(structure);
 }
 
 #endif //_INCLUDE_VIENNA_RNA_H_

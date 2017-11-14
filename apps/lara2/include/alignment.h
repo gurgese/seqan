@@ -51,15 +51,15 @@
 // Function computeMissingInteractions()
 // ----------------------------------------------------------------------------
 
-void computeMissingInteractions(TRnaVect & rnaRecordVector, LaraOptions const & options)
+void computeMissingInteractions(RnaRecordVector & rnaRecordVector, LaraOptions const & options)
 {
     bool const logStructureScoring = options.structureScoring == LOGARITHMIC;
 
-//#pragma omp parallel for num_threads(options.threads)
-    for (typename Size<TRnaVect>::Type idx = 0; idx < length(rnaRecordVector); ++idx)
+    #pragma omp parallel for num_threads(options.threads)
+    for (RnaRecordVector::iterator recordIt = rnaRecordVector.begin(); recordIt < rnaRecordVector.end(); ++recordIt)
     {
-        if (empty(rnaRecordVector[idx].bppMatrGraphs))  // if dotplot or extended bpseq data are not present
-            computeBppMatrix(rnaRecordVector[idx], options.thrBppm, logStructureScoring);
+        if (empty(recordIt->bppMatrGraphs))  // if dotplot or extended bpseq data are not present
+            computeBppMatrix(*recordIt, options.thrBppm, logStructureScoring);
     }
 }
 
@@ -74,7 +74,7 @@ void setScoreMatrix(LaraOptions & options)
     if (empty(options.laraScoreMatrixName))
     {
         _VV(options, "Predefined RIBOSUM matrix will be used");
-        setDefaultScoreMatrix(options.laraScoreMatrix, TRibosum());
+        setDefaultScoreMatrix(options.laraScoreMatrix, Ribosum65N());
     }
     else if (loadScoreMatrix(options.laraScoreMatrix, toCString(options.laraScoreMatrixName)))
     {
@@ -84,7 +84,7 @@ void setScoreMatrix(LaraOptions & options)
     {
         std::cerr << "Matrix file could not be opened: " << options.laraScoreMatrixName
                   << "). Predefined RIBOSUM matrix will be used." << std::endl;
-        setDefaultScoreMatrix(options.laraScoreMatrix, TRibosum());
+        setDefaultScoreMatrix(options.laraScoreMatrix, Ribosum65N());
     }
 
     // scale the matrix
@@ -100,7 +100,7 @@ void setScoreMatrix(LaraOptions & options)
 
 void initialAlignment(String<double> & results, StringSet<RnaAlignment> & alignments, LaraOptions const & options)
 {
-    TScoreMatrix scoreMatrix = options.laraScoreMatrix;
+    RnaScoreMatrix scoreMatrix = options.laraScoreMatrix;
     scoreMatrix.data_gap_extend = options.generatorGapExtend / options.sequenceScale;
     scoreMatrix.data_gap_open   = options.generatorGapOpen   / options.sequenceScale;
 
@@ -136,20 +136,20 @@ void structuralAlignment(String<double> & results, StringSet<RnaAlignment> & ali
     {
         if (options.affineLinearDgs == 0)
         {
-//#pragma omp parallel for num_threads(options.threads)
+            #pragma omp parallel for num_threads(options.threads)
             for (unsigned idx = 0; idx < length(alignments); ++idx) // TODO replace this function with the SIMD implementation for execute in PARALLEL
                 results[idx] = globalAlignment(alignments[idx], alignmentTraits[idx].structureScore, AffineGaps());
 
         }
         else if (options.affineLinearDgs == 1)
         {
-//#pragma omp parallel for num_threads(options.threads)
+            #pragma omp parallel for num_threads(options.threads)
             for (unsigned idx = 0; idx < length(alignments); ++idx) // TODO replace this function with the SIMD implementation for execute in PARALLEL
                 results[idx] = globalAlignment(alignments[idx], alignmentTraits[idx].structureScore, LinearGaps());
 
         }
         else {
-//#pragma omp parallel for num_threads(options.threads)
+            #pragma omp parallel for num_threads(options.threads)
             for (unsigned idx = 0; idx < length(alignments); ++idx) // TODO replace this function with the SIMD implementation for execute in PARALLEL
                 results[idx] = globalAlignment(alignments[idx], alignmentTraits[idx].structureScore, DynamicGaps());
 
@@ -159,20 +159,20 @@ void structuralAlignment(String<double> & results, StringSet<RnaAlignment> & ali
     {
         if (options.affineLinearDgs == 0)
         {
-//#pragma omp parallel for num_threads(options.threads)
+            #pragma omp parallel for num_threads(options.threads)
             for (unsigned idx = 0; idx < length(alignments); ++idx) // TODO replace this function with the SIMD implementation for execute in PARALLEL
                 results[idx] = localAlignment(alignments[idx], alignmentTraits[idx].structureScore, AffineGaps());
 
         }
         else if (options.affineLinearDgs == 1)
         {
-//#pragma omp parallel for num_threads(options.threads)
+            #pragma omp parallel for num_threads(options.threads)
             for (unsigned idx = 0; idx < length(alignments); ++idx) // TODO replace this function with the SIMD implementation for execute in PARALLEL
                 results[idx] = localAlignment(alignments[idx], alignmentTraits[idx].structureScore, LinearGaps());
 
         }
         else {
-//#pragma omp parallel for num_threads(options.threads)
+            #pragma omp parallel for num_threads(options.threads)
             for (unsigned idx = 0; idx < length(alignments); ++idx) // TODO replace this function with the SIMD implementation for execute in PARALLEL
                 results[idx] = localAlignment(alignments[idx], alignmentTraits[idx].structureScore, DynamicGaps());
 
@@ -184,8 +184,8 @@ void structuralAlignment(String<double> & results, StringSet<RnaAlignment> & ali
 // Function crossproduct()
 // ----------------------------------------------------------------------------
 
-inline void _fillVectors (RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector::iterator & alignInfo,
-                          TRnaVect::iterator const & it1, TRnaVect::iterator const & it2)
+inline void _fillVectors(RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector::iterator & alignInfo,
+                         RnaRecordVector::iterator const & it1, RnaRecordVector::iterator const & it2)
 {
     appendValue(setH, it1->sequence);
     appendValue(setV, it2->sequence);
@@ -197,9 +197,10 @@ inline void _fillVectors (RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraits
 }
 
 // unique combination of all sequences of one single set
-void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector & alignmentTraits, TRnaVect & seqs)
+void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector & alignmentTraits,
+                  RnaRecordVector & recordVect)
 {
-    typename Size<TRnaVect>::Type const len = length(seqs);
+    typename Size<RnaRecordVector>::Type const len = length(recordVect);
     if (len == 0)
         return;
 
@@ -209,13 +210,13 @@ void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector &
     RnaAlignmentTraitsVector::iterator alignInfo = alignmentTraits.begin();
 
     unsigned p = 0;
-    for (TRnaVect::iterator it1 = seqs.begin(); it1 != seqs.end(); ++it1)
+    for (RnaRecordVector::iterator it1 = recordVect.begin(); it1 != recordVect.end(); ++it1)
     {
-        for (TRnaVect::iterator it2 = it1 + 1u; it2 != seqs.end(); ++it2)
+        for (RnaRecordVector::iterator it2 = it1 + 1u; it2 != recordVect.end(); ++it2)
         {
             _fillVectors(setH, setV, alignInfo, it1, it2);
-            alignmentTraits[p].sequenceIndices.first  = static_cast<unsigned>(std::distance(seqs.begin(), it1));
-            alignmentTraits[p].sequenceIndices.second = static_cast<unsigned>(std::distance(seqs.begin(), it2));
+            alignmentTraits[p].sequenceIndices.first  = static_cast<unsigned>(std::distance(recordVect.begin(), it1));
+            alignmentTraits[p].sequenceIndices.second = static_cast<unsigned>(std::distance(recordVect.begin(), it2));
             ++p;
         }
     }
@@ -223,26 +224,26 @@ void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector &
 
 // combination of all sequences of two sets
 void crossproduct(RnaSeqSet & setH, RnaSeqSet & setV, RnaAlignmentTraitsVector & alignmentTraits,
-                  TRnaVect & seqs1, TRnaVect & seqs2) {
-    if (empty(seqs2))
+                  RnaRecordVector & recordVect1, RnaRecordVector & recordVect2) {
+    if (empty(recordVect2))
     {
-        crossproduct(setH, setV, alignmentTraits, seqs1);
+        crossproduct(setH, setV, alignmentTraits, recordVect1);
     }
     else
     {
-        reserve(setH, length(seqs1) * length(seqs2));
-        reserve(setV, length(seqs1) * length(seqs2));
-        resize(alignmentTraits, length(seqs1) * length(seqs2));
+        reserve(setH, length(recordVect1) * length(recordVect2));
+        reserve(setV, length(recordVect1) * length(recordVect2));
+        resize(alignmentTraits, length(recordVect1) * length(recordVect2));
         RnaAlignmentTraitsVector::iterator alignInfo = alignmentTraits.begin();
 
         unsigned p = 0;
-        for (TRnaVect::iterator it1 = seqs1.begin(); it1 < seqs1.end(); ++it1)
+        for (RnaRecordVector::iterator it1 = recordVect1.begin(); it1 < recordVect1.end(); ++it1)
         {
-            for (TRnaVect::iterator it2 = seqs2.begin(); it2 < seqs2.end(); ++it2)
+            for (RnaRecordVector::iterator it2 = recordVect2.begin(); it2 < recordVect2.end(); ++it2)
             {
                 _fillVectors(setH, setV, alignInfo, it1, it2);
-                alignmentTraits[p].sequenceIndices.first = static_cast<unsigned>(std::distance(seqs1.begin(), it1));
-                alignmentTraits[p].sequenceIndices.second = static_cast<unsigned>(std::distance(seqs2.begin(), it2));
+                alignmentTraits[p].sequenceIndices.first = static_cast<unsigned>(std::distance(recordVect1.begin(), it1));
+                alignmentTraits[p].sequenceIndices.second = static_cast<unsigned>(std::distance(recordVect2.begin(), it2));
                 ++p;
             }
         }

@@ -48,7 +48,7 @@
 #include <map>
 #include <limits>
 #include <sstream>
-//#include <omp.h>
+#include <omp.h>
 #include <ctime>
 
 // ----------------------------------------------------------------------------
@@ -169,7 +169,7 @@ int main (int argc, char const ** argv)
         _VV(options, "\nalignment in iteration " << iter << " (score " << upperBoundScores[0] << "):\n"
                                                  << alignments[0]);
 
-        //#pragma omp parallel for num_threads(options.threads)
+        #pragma omp parallel for num_threads(options.threads)
         for (unsigned idx = 0; idx < length(alignments); ++idx)
         {
             RnaAlignmentTraits & traits = alignmentTraits[idx];

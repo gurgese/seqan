@@ -271,11 +271,11 @@ double computeLowerBoundGreedy(InteractionScoreMap & interactions)
 {
     // add vertices
     RnaInteractionGraph graph;
-    forEach(interactions, [&graph] (TMap const &) { addVertex(graph); });
+    forEach(interactions, [&graph] (ScMap const &) { addVertex(graph); });
 
     // add edges
     for (unsigned vertexIdx = 0; vertexIdx < length(interactions); ++vertexIdx)
-        for (TMap::iterator mapIt = interactions[vertexIdx].begin(); mapIt != interactions[vertexIdx].end(); ++mapIt)
+        for (ScMap::iterator mapIt = interactions[vertexIdx].begin(); mapIt != interactions[vertexIdx].end(); ++mapIt)
             addEdge(graph, vertexIdx, mapIt->first, mapIt->second);
 
     return maximumWeightedMatchingGreedy<5>(graph);

@@ -271,30 +271,30 @@ void computeTCoffeWeightsFixedInter(tcoffeePair & tcPair, LaraOptions const & op
 // ----------------------------------------------------------------------------
 
 void computeTCoffeWeights(TTCoffeeLib & tcLib, LaraOptions const & options, RnaStructContentsPair const & filecontents,
-                          RnaAlignmentTraitsVector & alignmentTraits)
+                          RnaAlignmentTraitsVector & traitsVect)
 {
-//    #pragma omp parallel for num_threads(options.threads)
-    for (RnaAlignmentTraits & traits : alignmentTraits)
+    #pragma omp parallel for num_threads(options.threads)
+    for (RnaAlignmentTraitsVector::iterator traitsIt = traitsVect.begin(); traitsIt < traitsVect.end(); ++traitsIt)
     {
 //        RnaAlignmentTraits & traits = alignmentTraits[i];
         tcoffeePair tcPair;
-        tcPair.idSeqH = traits.sequenceIndices.first + 1;
-        tcPair.idSeqV = traits.sequenceIndices.second + 1;
+        tcPair.idSeqH = traitsIt->sequenceIndices.first + 1;
+        tcPair.idSeqV = traitsIt->sequenceIndices.second + 1;
 
-        RnaRecord const & rna1 = filecontents.first.records[traits.sequenceIndices.first];
+        RnaRecord const & rna1 = filecontents.first.records[traitsIt->sequenceIndices.first];
         RnaRecord const & rna2 = empty(filecontents.second.records)
-                                 ? filecontents.first.records[traits.sequenceIndices.second]
-                                 : filecontents.second.records[traits.sequenceIndices.second];
+                                 ? filecontents.first.records[traitsIt->sequenceIndices.second]
+                                 : filecontents.second.records[traitsIt->sequenceIndices.second];
 
         if (!empty(filecontents.second.records))
             tcPair.idSeqV += filecontents.first.records.size();
 
         switch (options.tcoffeLibMode)
         {
-            case PROPORTIONAL: computeTCoffeWeightsProportional(tcPair, traits); break;
-            case SWITCH:       computeTCoffeWeightsSwitch(tcPair, traits); break;
-            case ALLINTER:     computeTCoffeWeightsAllInter(tcPair, options, traits); break;
-            case FIXEDINTER:   computeTCoffeWeightsFixedInter(tcPair, options, rna1, rna2, traits); break;
+            case PROPORTIONAL: computeTCoffeWeightsProportional(tcPair, *traitsIt); break;
+            case SWITCH:       computeTCoffeWeightsSwitch(tcPair, *traitsIt); break;
+            case ALLINTER:     computeTCoffeWeightsAllInter(tcPair, options, *traitsIt); break;
+            case FIXEDINTER:   computeTCoffeWeightsFixedInter(tcPair, options, rna1, rna2, *traitsIt); break;
             default:           std::cout << "Select one of the available modes to compute the T-COFFEE library.\n";
         }
 

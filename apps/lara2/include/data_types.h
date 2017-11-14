@@ -101,15 +101,13 @@ int const TCMAX = 1000;
 // ============================================================================
 
 typedef seqan::Align<seqan::Rna5String, seqan::ArrayGaps> RnaAlignment;      // align type
-typedef seqan::Score<double, seqan::ScoreMatrix<seqan::Rna5, seqan::Default> > TScoreMatrix;
-typedef seqan::Ribosum65N TRibosum;
-typedef std::map<unsigned, double> TMap;
+typedef seqan::Score<double, seqan::ScoreMatrix<seqan::Rna5, seqan::Default> > RnaScoreMatrix;
+typedef std::map<unsigned, double> ScMap;
 typedef std::vector<std::map<unsigned, double> > InteractionScoreMap;
-typedef std::vector<seqan::RnaRecord> TRnaVect;
+typedef std::vector<seqan::RnaRecord> RnaRecordVector;
 typedef StringSet<Rna5String, Dependent<Generous> > RnaSeqSet;
 typedef std::pair<RnaStructContents, RnaStructContents> RnaStructContentsPair;
 typedef std::pair<unsigned, unsigned> PositionPair;
-
 typedef seqan::Graph<seqan::Undirected<double> > RnaInteractionGraph;
 
 struct LaraOptions;
@@ -131,7 +129,7 @@ struct RnaInteraction
 
 typedef seqan::String<std::map<unsigned, RnaInteraction> > OutgoingInteractions;
 
-typedef seqan::Score<double, RnaStructureScore<TScoreMatrix, OutgoingInteractions> > LaraScoringScheme;
+typedef seqan::Score<double, RnaStructureScore<RnaScoreMatrix, OutgoingInteractions> > LaraScoringScheme;
 
 struct bestAlign
 {

@@ -116,7 +116,7 @@ struct LaraOptions
 // scoring matrix name that should be used for scoring alignment edges in the actual problem
     seqan::CharString laraScoreMatrixName{};
 //    Score<double, ScoreMatrix<Rna5, Default> > laraScoreMatrix;
-    TScoreMatrix laraScoreMatrix;
+    RnaScoreMatrix laraScoreMatrix;
 //    TScoringSchemeRib laraScoreMatrixRib;
 // Gap open and extend costs for generating the alignment edges
     double generatorGapOpen{-6.0};

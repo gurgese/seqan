@@ -45,6 +45,9 @@
 // Tags, Classes, Enums
 // ============================================================================
 
+namespace seqan
+{
+
 template<typename TScoreMatrix, typename TOutgoingInteractions>
 struct RnaStructureScore;
 
@@ -92,7 +95,7 @@ struct SequenceEntryForScore<Score<TValue, RnaStructureScore<TScoreMatrix, TOutg
 
 template<typename TValue, typename TScoreMatrix, typename TOutgoingInteractions, typename TSequence>
 struct SequenceEntryForScore<Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> > const, TSequence> :
-SequenceEntryForScore<Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> >, TSequence>
+    SequenceEntryForScore<Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> >, TSequence>
 {
 };
 
@@ -121,9 +124,9 @@ sequenceEntryForScore(Score<TScoreValue, RnaStructureScore<TScoreMatrix, TOutgoi
 template<typename TValue, typename TScoreMatrix, typename TOutgoingInteractions, typename TSeq1, typename TSeq2>
 inline TValue
 scoreGapExtendHorizontal(
-Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> > const &me,
-ConsensusScoreSequenceEntry<TSeq1> const &entry1,
-ConsensusScoreSequenceEntry<TSeq2> const &entry2)
+    Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> > const &me,
+    ConsensusScoreSequenceEntry<TSeq1> const &entry1,
+    ConsensusScoreSequenceEntry<TSeq2> const &entry2)
 {
 //  unsigned posit=position(entry1);
 //  if ((int)position(entry1) == 0)
@@ -143,9 +146,9 @@ ConsensusScoreSequenceEntry<TSeq2> const &entry2)
 template<typename TValue, typename TScoreMatrix, typename TOutgoingInteractions, typename TSeq1, typename TSeq2>
 inline TValue
 scoreGapOpenHorizontal(
-Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> > const &me,
-ConsensusScoreSequenceEntry<TSeq1> const &entry1,
-ConsensusScoreSequenceEntry<TSeq2> const &entry2)
+    Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> > const &me,
+    ConsensusScoreSequenceEntry<TSeq1> const &entry1,
+    ConsensusScoreSequenceEntry<TSeq2> const &entry2)
 {
 //  return scoreGapOpenHorizontal(me.score_matrix, (unsigned)ordValue(entry1._seq[0][entry1._pos]), (unsigned)ordValue(entry2._seq[0][entry2._pos]));
     return scoreGapOpenHorizontal(me.matrix, (*entry1._seq)[position(entry1)],
@@ -159,9 +162,9 @@ ConsensusScoreSequenceEntry<TSeq2> const &entry2)
 template<typename TValue, typename TScoreMatrix, typename TOutgoingInteractions, typename TSeq1, typename TSeq2>
 inline TValue
 scoreGapOpenVertical(
-Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> > const &me,
-ConsensusScoreSequenceEntry<TSeq1> const & /*entry1*/,
-ConsensusScoreSequenceEntry<TSeq2> const & /*entry2*/)
+    Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> > const &me,
+    ConsensusScoreSequenceEntry<TSeq1> const & /*entry1*/,
+    ConsensusScoreSequenceEntry<TSeq2> const & /*entry2*/)
 {
 // return scoreGapOpenVertical(me.score_matrix, entry1._seq[0][entry1.pos], entry2._seq[0][entry2.pos]);
     return scoreGapOpenVertical(me.matrix, Nothing(), Nothing());
@@ -174,9 +177,9 @@ ConsensusScoreSequenceEntry<TSeq2> const & /*entry2*/)
 template<typename TValue, typename TScoreMatrix, typename TOutgoingInteractions, typename TSeq1, typename TSeq2>
 inline TValue
 scoreGapExtendVertical(
-Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> > const &me,
-ConsensusScoreSequenceEntry<TSeq1> const & /*entry1*/,
-ConsensusScoreSequenceEntry<TSeq2> const & /*entry2*/)
+    Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> > const &me,
+    ConsensusScoreSequenceEntry<TSeq1> const & /*entry1*/,
+    ConsensusScoreSequenceEntry<TSeq2> const & /*entry2*/)
 {
 // return scoreGapExtendVertical(me.score_matrix, entry1._seq[0][entry1.pos], entry2._seq[0][entry2.pos]);
     return scoreGapExtendVertical(me.matrix, Nothing(), Nothing());
@@ -209,5 +212,7 @@ score(Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> > con
     return score(me.matrix, (*entry1._seq)[position(entry1)],
                  (*entry2._seq)[position(entry2)]) + me.getMapLineValue(position(entry1), position(entry2));
 }
+
+} // namespace seqan
 
 #endif  // #ifndef SEQAN_INCLUDE_ALIGN_RNA_SCORE_STRUCTURE_RNA_H_

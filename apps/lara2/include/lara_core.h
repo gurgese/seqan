@@ -524,7 +524,6 @@ void computeNumberOfSubgradients(RnaAlignmentTraits & traits, seqan::String<Posi
             }
         }
     }
-    std::cerr << "numberOfSubgradients = " << traits.numberOfSubgradients << std::endl;
 }
 
 // ----------------------------------------------------------------------------

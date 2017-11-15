@@ -204,7 +204,9 @@ int main (int argc, char const ** argv)
             }
 
             traits.bestLowerBound = std::max(traits.bestLowerBound, traits.lowerBound);
-            _VV(options,"best l/u bounds: " << traits.bestLowerBound << " / " << traits.bestUpperBound);
+            _VV(options,"best l/u bounds for sequences (" << traits.sequenceIndices.first << ","
+                                                          << traits.sequenceIndices.second << "): "
+                                                          << traits.bestLowerBound << " / " << traits.bestUpperBound);
             SEQAN_ASSERT_LEQ(traits.bestLowerBound, traits.bestUpperBound);
 
             if (traits.bestUpperBound - traits.bestLowerBound < options.epsilon)
@@ -269,6 +271,9 @@ int main (int argc, char const ** argv)
                     isOptimal.erase(isOptimal.begin() + idx - 1);
                 }
             }
+            // renew pointers
+            for (RnaAlignmentTraits & traits : alignmentTraits)
+                traits.structureScore.interactions = & traits.interactions;
         }
         // Progress bar.
         if (options.verbose == 1) std::cerr << "|";

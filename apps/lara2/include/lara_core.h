@@ -532,27 +532,19 @@ void computeNumberOfSubgradients(RnaAlignmentTraits & traits, seqan::String<Posi
 
 void updateLambdaValues(RnaAlignmentTraits & traits, seqan::String<PositionPair> const & unclosedLoops)
 {
-    for (PositionPair const & line : unclosedLoops)
+    for (PositionPair const & lineL : unclosedLoops)
     {
-        if (traits.interactions[line.first].count(line.second) > 0)
+        if (traits.interactions[lineL.first].count(lineL.second) > 0)
         {
-            RnaInteraction & interaction = traits.interactions[line.first][line.second];
-            if (true || interaction.lineL.first !=
-                traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.first
-                || interaction.lineL.second !=
-                   traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.second)
+            RnaInteraction & interaction = traits.interactions[lineL.first][lineL.second];
+            interaction.lambdaValue -= traits.stepSize;
+
+            // Check whether lambda of paired lineM directs back to lineL
+            RnaInteraction & paired = traits.interactions[interaction.lineM.first][interaction.lineM.second];
+            if (paired.lineM == interaction.lineL)
             {
-                interaction.lambdaValue -= traits.stepSize;
-                traits.interactions[interaction.lineM.first][interaction.lineM.second].lambdaValue += traits.stepSize;
+                paired.lambdaValue += traits.stepSize;
             }
-/*
-            std::cout << line.first << " : " << line.second << " = " << interaction.weight << " -> "<< interaction.step << " | ";
-            std::cout << interaction.lineM.first << " : "
-                      << interaction.lineM.second << " = "
-                      << traits.interactions[interaction.lineM.first][interaction.lineM.second].weight << " -> "
-                      << traits.interactions[interaction.lineM.first][interaction.lineM.second].step
-                      << std::endl;
-*/
         }
     }
 }

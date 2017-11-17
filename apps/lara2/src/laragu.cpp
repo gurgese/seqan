@@ -166,8 +166,6 @@ int main (int argc, char const ** argv)
     {
         bool foundAnOptimalAlignment = false;
         structuralAlignment(upperBoundScores, alignments, alignmentTraits, options);
-        _VV(options, "\nalignment in iteration " << iter << " (score " << upperBoundScores[0] << "):\n"
-                                                 << alignments[0]);
 
         #pragma omp parallel for num_threads(options.threads)
         for (unsigned idx = 0; idx < length(alignments); ++idx)
@@ -182,6 +180,8 @@ int main (int argc, char const ** argv)
             // If lines have changed the lower bound must be calculated.
             if (changedLines || iter == 0)
             {
+                _VV(options, "\nalignment " << idx << " in iteration " << iter << " (score " << upperBoundScores[0]
+                                            << "):\n" << alignments[idx]);
                 evaluateInteractions(traits, iter);
 
                 InteractionScoreMap validInteractionScores;

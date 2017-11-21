@@ -166,8 +166,6 @@ int main (int argc, char const ** argv)
     {
         bool foundAnOptimalAlignment = false;
         structuralAlignment(upperBoundScores, alignments, alignmentTraits, options);
-        _VV(options, "\nalignment in iteration " << iter << " (score " << upperBoundScores[0] << "):\n"
-                                                 << alignments[0]);
 
         #pragma omp parallel for num_threads(options.threads)
         for (unsigned idx = 0; idx < length(alignments); ++idx)
@@ -182,6 +180,8 @@ int main (int argc, char const ** argv)
             // If lines have changed the lower bound must be calculated.
             if (changedLines || iter == 0)
             {
+                _VV(options, "\nalignment " << idx << " in iteration " << iter << " (score " << upperBoundScores[0]
+                                            << "):\n" << alignments[idx]);
                 evaluateInteractions(traits, iter);
 
                 InteractionScoreMap validInteractionScores;
@@ -204,7 +204,9 @@ int main (int argc, char const ** argv)
             }
 
             traits.bestLowerBound = std::max(traits.bestLowerBound, traits.lowerBound);
-            _VV(options,"best l/u bounds: " << traits.bestLowerBound << " / " << traits.bestUpperBound);
+            _VV(options,"best l/u bounds for sequences (" << traits.sequenceIndices.first << ","
+                                                          << traits.sequenceIndices.second << "): "
+                                                          << traits.bestLowerBound << " / " << traits.bestUpperBound);
             SEQAN_ASSERT_LEQ(traits.bestLowerBound, traits.bestUpperBound);
 
             if (traits.bestUpperBound - traits.bestLowerBound < options.epsilon)
@@ -269,6 +271,9 @@ int main (int argc, char const ** argv)
                     isOptimal.erase(isOptimal.begin() + idx - 1);
                 }
             }
+            // renew pointers
+            for (RnaAlignmentTraits & traits : alignmentTraits)
+                traits.structureScore.interactions = & traits.interactions;
         }
         // Progress bar.
         if (options.verbose == 1) std::cerr << "|";

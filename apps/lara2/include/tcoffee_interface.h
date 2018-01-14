@@ -310,13 +310,13 @@ void computeTCoffeWeights(TTCoffeeLib & tcLib, LaraOptions const & options, RnaS
 void writeFileTCoffeeLib(TTCoffeeLib & tcLib, LaraOptions const & options)
 {
     bool had_err = false;
-    std::ofstream tcoffeLibFile;
+    std::ofstream tcoffeeLibFile;
     if (empty(options.outFile))
     {
         seqan::CharString filePath = options.tmpDir;
         append(filePath, "/tcoffeLara.lib");
-        tcoffeLibFile.open(toCString(filePath));
-        if (!tcoffeLibFile.is_open())
+        tcoffeeLibFile.open(toCString(filePath));
+        if (!tcoffeeLibFile.is_open())
         {
             std::cerr << "Unable to open the tcoffee lib file for writing: " << filePath << std::endl;
             had_err = true;
@@ -324,8 +324,8 @@ void writeFileTCoffeeLib(TTCoffeeLib & tcLib, LaraOptions const & options)
     }
     else
     {
-        tcoffeLibFile.open(toCString(options.outFile), std::ios::out);
-        if (!tcoffeLibFile.is_open())
+        tcoffeeLibFile.open(toCString(options.outFile), std::ios::out);
+        if (!tcoffeeLibFile.is_open())
         {
             std::cerr << "Unable to open the specified output file for writing: " << options.outFile << std::endl;
             had_err = true;
@@ -334,21 +334,21 @@ void writeFileTCoffeeLib(TTCoffeeLib & tcLib, LaraOptions const & options)
 
     if (!had_err)
     {
-        tcoffeLibFile << "! T-COFFEE_LIB_FORMAT_01" << std::endl;
-        tcoffeLibFile << tcLib.rnas.size() << std::endl;
+        tcoffeeLibFile << "! T-COFFEE_LIB_FORMAT_01" << std::endl;
+        tcoffeeLibFile << tcLib.rnas.size() << std::endl;
         for (unsigned i = 0; i < tcLib.rnas.size(); ++i)
         {
-            tcoffeLibFile << tcLib.rnas[i].name << " " << length(tcLib.rnas[i].sequence) << " ";
-            tcoffeLibFile <<  tcLib.rnas[i].sequence << std::endl;
+            tcoffeeLibFile << tcLib.rnas[i].name << " " << length(tcLib.rnas[i].sequence) << " ";
+            tcoffeeLibFile <<  tcLib.rnas[i].sequence << std::endl;
         }
         for (unsigned i = 0; i < tcLib.rnaPairs.size(); ++i)
         {
-            tcoffeLibFile << "# " << tcLib.rnaPairs[i].idSeqH << " " << tcLib.rnaPairs[i].idSeqV << std::endl;
+            tcoffeeLibFile << "# " << tcLib.rnaPairs[i].idSeqH << " " << tcLib.rnaPairs[i].idSeqV << std::endl;
             for (tcoffeeW const & tcWeight : tcLib.rnaPairs[i].alignWeights)
-                tcoffeLibFile << tcWeight.ntSeqH << " " << tcWeight.ntSeqV << " " << tcWeight.weight << std::endl;
+                tcoffeeLibFile << tcWeight.ntSeqH << " " << tcWeight.ntSeqV << " " << tcWeight.weight << std::endl;
         }
-        tcoffeLibFile << "! SEQ_1_TO_N" << std::endl;
-        tcoffeLibFile.close();
+        tcoffeeLibFile << "! SEQ_1_TO_N" << std::endl;
+        tcoffeeLibFile.close();
     }
 }
 

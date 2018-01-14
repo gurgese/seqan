@@ -294,8 +294,12 @@ int main (int argc, char const ** argv)
     }
 
     alignmentTraits.insert(alignmentTraits.end(), optimalAlignTraits.begin(), optimalAlignTraits.end());
+
     // This is a multiple alignment and the T-Coffee library must be printed
-    createTCoffeeLib(options, filecontents, alignmentTraits);
+    if (endsWith(options.outFile, "fa") || endsWith(options.outFile, "fasta"))
+        createFastaAlignmentFile(options, alignmentTraits);
+    else
+        createTCoffeeLib(options, filecontents, alignmentTraits);
 
     return 0;
 }

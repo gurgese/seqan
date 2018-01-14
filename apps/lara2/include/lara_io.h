@@ -141,6 +141,22 @@ void plotAlignments(LaraOptions const & options, RnaAlignmentTraitsVector & alig
     }
 }
 
+void createFastaAlignmentFile(LaraOptions const & options, RnaAlignmentTraitsVector & alignmentTraits)
+{
+    std::ofstream fastaFile;
+    fastaFile.open(toCString(options.outFile), std::ios::out);
+    if (!fastaFile.is_open())
+    {
+        std::cerr << "Unable to open the specified output file for writing: " << options.outFile << std::endl;
+        return;
+    }
+
+    RnaAlignment const & ali = alignmentTraits[0].forMinDiff.bestAlign;
+    fastaFile << ">sequence1" << std::endl << row(ali, 0) << std::endl;
+    fastaFile << ">sequence2" << std::endl << row(ali, 1) << std::endl;
+    fastaFile.close();
+}
+
 CharString getEbpseqString(RnaStructContents & filecontents)
 {
     String<char> outstr;

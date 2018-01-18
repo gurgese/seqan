@@ -84,6 +84,8 @@ struct LaraOptions
     seqan::CharString inFile{};
 // Name of input fileRef
     seqan::CharString inFileRef{};
+// Name of dotplot file
+    std::vector<std::string> dotplotFile{};
 // Name of output file (default: stdout)
     seqan::CharString outFile{};
 // temporary directory where to save intermediate files. Default: use the input file directory.
@@ -205,6 +207,10 @@ void setupArgumentParser(ArgumentParser & parser, TOption const & /* options */)
     addOption(parser, ArgParseOption("ir", "inFileRef",
                                      "Path to the reference input file",
                                      ArgParseArgument::INPUT_FILE, "IN"));
+
+    addOption(parser, ArgParseOption("d", "dotplots",
+                                     "Use dotplot files (.ps) as bpp input",
+                                     ArgParseArgument::INPUT_FILE, "IN", true));
 
     // Output options
     addSection(parser, "Output Options");
@@ -495,6 +501,14 @@ ArgumentParser::ParseResult parse(LaraOptions & options, ArgumentParser & parser
         return ArgumentParser::PARSE_ERROR;
 
     getOptionValue(options.inFileRef, parser, "inFileRef");
+
+    unsigned numDotplots = getOptionValueCount(parser, "dotplots");
+    options.dotplotFile.resize(numDotplots);
+    for (unsigned idx = 0; idx < numDotplots; ++idx)
+    {
+        getOptionValue(options.dotplotFile[idx], parser, "dotplots", idx);
+    }
+
     getOptionValue(options.outFile, parser, "outFile");
     if (isSet(parser, "outFile"))
     {

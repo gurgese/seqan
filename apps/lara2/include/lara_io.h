@@ -47,6 +47,9 @@
 // ----------------------------------------------------------------------------
 
 #include <limits>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 #include <seqan/rna_io.h>
 
@@ -169,6 +172,51 @@ CharString getEbpseqString(RnaStructContents & filecontents)
     for (RnaRecord & rec : filecontents.records)
         writeRecord(outstr, rec, context, Ebpseq());
     return outstr;
+}
+
+void extractBppFromDotplot(RnaRecord & rnaRecord, std::string const & dotplotFile)
+{
+    double const minProb = 0.003; // taken from LISA > Lara
+
+    // add vertices to graph
+    RnaStructureGraph bppMatrGraph;
+    for (unsigned idx = 0u; idx < length(rnaRecord.sequence); ++idx)
+        addVertex(bppMatrGraph.inter);
+
+    // open dotplot file and read lines
+    std::ifstream file(dotplotFile);
+    std::string line;
+    while (std::getline(file, line))
+    {
+        if (line.find("ubox") == std::string::npos)
+            continue;
+
+        std::istringstream iss(line);
+        unsigned iPos, jPos;
+        double prob;
+        if (iss >> iPos >> jPos >> prob) // read values from line
+        {   // create edges for graph
+            SEQAN_ASSERT(iPos > 0 && iPos <= length(rnaRecord.sequence));
+            SEQAN_ASSERT(jPos > 0 && jPos <= length(rnaRecord.sequence));
+            // convert indices from range 1..length to 0..length-1
+            if (prob * prob > minProb) // dot plot contains sqrt(prob)
+                addEdge(bppMatrGraph.inter, iPos - 1, jPos - 1, log(prob * prob / minProb));
+        }
+    }
+    bppMatrGraph.specs = CharString("ViennaRNA dot plot from file " + std::string(dotplotFile));
+    append(rnaRecord.bppMatrGraphs, bppMatrGraph);
+}
+
+void readDotplotFiles(RnaStructContentsPair & filecontents, std::vector<std::string> const & dotplotFiles)
+{
+    SEQAN_ASSERT_EQ(length(dotplotFiles),
+                    length(filecontents.first.records) + length(filecontents.second.records));
+    unsigned fileIdx;
+    for (fileIdx = 0u; fileIdx < length(filecontents.first.records); ++fileIdx)
+        extractBppFromDotplot(filecontents.first.records[fileIdx], dotplotFiles[fileIdx]);
+
+    for (unsigned recordIdx = 0u; recordIdx < length(filecontents.second.records); ++recordIdx, ++fileIdx)
+        extractBppFromDotplot(filecontents.second.records[recordIdx], dotplotFiles[fileIdx]);
 }
 
 #endif //_INCLUDE_LARA_IO_H_

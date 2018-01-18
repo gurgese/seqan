@@ -116,9 +116,17 @@ int main (int argc, char const ** argv)
     _VV(options, "Read " << length(filecontents.first.records) << " and "
                          << length(filecontents.second.records) << " records from input files.");
 
-    // If not present, compute the weighted interaction edges using ViennaRNA functions.
-    computeMissingInteractions(filecontents.first.records, options);
-    computeMissingInteractions(filecontents.second.records, options);
+    if (length(options.dotplotFile) == length(filecontents.first.records) + length(filecontents.second.records))
+    {
+        _V(options, "Using given dotplot files to extract the base pair probabilities.");
+        readDotplotFiles(filecontents, options.dotplotFile);
+    }
+    else
+    {
+        // If not present, compute the weighted interaction edges using ViennaRNA functions.
+        computeMissingInteractions(filecontents.first.records, options);
+        computeMissingInteractions(filecontents.second.records, options);
+    }
     _VVV(options, getEbpseqString(filecontents.first) << getEbpseqString(filecontents.second));
 
 

@@ -183,7 +183,7 @@ int main (int argc, char const ** argv)
 
             // Set upper bound (i.e. the relaxed solution = Lagrangian dual).
             traits.upperBound = upperBoundScores[idx];
-            traits.bestUpperBound = std::min(traits.bestUpperBound, traits.upperBound);
+//            traits.bestUpperBound = std::min(traits.bestUpperBound, traits.upperBound); // this value must be changed in agreement with the lower bound
 
             // If lines have changed the lower bound must be calculated.
             if (changedLines || iter == 0)
@@ -207,14 +207,44 @@ int main (int argc, char const ** argv)
                     default:         std::cerr << "Lower Bound method not implemented." << std::endl;
                                      exit(1);
                 }
-
+                _VVV(options,iter << "\tLow bound component MWM/SeqAlignScore for sequences (" << traits.sequenceIndices.first
+                                                              << ","  << traits.sequenceIndices.second << "): "
+                                                              << traits.lowerBound << " / " << traits.sequenceScore);
                 traits.lowerBound += traits.sequenceScore;
             }
-
-            traits.bestLowerBound = std::max(traits.bestLowerBound, traits.lowerBound);
-            _VV(options,"best l/u bounds for sequences (" << traits.sequenceIndices.first << ","
+            // Save best alignment scores for smallest Epslon
+            if( (traits.upperBound - traits.lowerBound) < (traits.bestUpperBound - traits.bestLowerBound) )
+            {
+                traits.bestUpperBound = traits.upperBound;
+                traits.bestLowerBound = traits.lowerBound;
+            }
+            // Save best alignment scores for maximum lowerBound
+            if( traits.lowerBound > traits.bestLowerBoundMaxLow)
+            {
+                traits.bestUpperBoundMaxLow = traits.upperBound;
+                traits.bestLowerBoundMaxLow = traits.lowerBound;
+            }
+            // Save best alignment scores for minimum upperBound
+            if( traits.upperBound < traits.bestUpperBoundMinUp) // TODO verify if there is the possibility to enter here without updating the lowerBound
+            {
+                traits.bestUpperBoundMinUp = traits.upperBound;
+                traits.bestLowerBoundMinUp = traits.lowerBound;
+            }
+//            traits.bestUpperBound = std::min(traits.bestUpperBound, traits.upperBound);
+//            traits.bestLowerBound = std::max(traits.bestLowerBound, traits.lowerBound);
+            _VVV(options,iter << "\tCurrent l/u bounds for sequences (" << traits.sequenceIndices.first << ","
                                                           << traits.sequenceIndices.second << "): "
-                                                          << traits.bestLowerBound << " / " << traits.bestUpperBound);
+                                                          << traits.lowerBound << " / " << traits.upperBound);
+            _VVV(options,iter << "\tBest l/u bounds with maximum LowerBound for sequences (" << traits.sequenceIndices.first << ","
+                              << traits.sequenceIndices.second << "): "
+                              << traits.bestLowerBoundMaxLow << " / " << traits.bestUpperBoundMaxLow);
+            _VVV(options,iter << "\tBest l/u bounds with minimum UpperBound for sequences (" << traits.sequenceIndices.first << ","
+                             << traits.sequenceIndices.second << "): "
+                             << traits.bestLowerBoundMinUp << " / " << traits.bestUpperBoundMinUp);
+            _VV(options,iter << "\tBest l/u bounds with smallest epslon for sequences (" << traits.sequenceIndices.first << ","
+                             << traits.sequenceIndices.second << "): "
+                             << traits.bestLowerBound << " / " << traits.bestUpperBound);
+
             SEQAN_ASSERT_LEQ(traits.bestLowerBound, traits.bestUpperBound);
 
             if (traits.bestUpperBound - traits.bestLowerBound < options.epsilon)

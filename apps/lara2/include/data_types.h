@@ -162,10 +162,14 @@ struct RnaAlignmentTraits
     // Lower bound values (primal)
     double lowerBound{std::numeric_limits<double>::lowest()};
     double bestLowerBound{std::numeric_limits<double>::lowest()};
+    double bestLowerBoundMaxLow{std::numeric_limits<double>::lowest()};
+    double bestLowerBoundMinUp{std::numeric_limits<double>::lowest()};
 
     // Upper bound values (dual)
     double upperBound{std::numeric_limits<double>::max()};
     double bestUpperBound{std::numeric_limits<double>::max()};
+    double bestUpperBoundMaxLow{std::numeric_limits<double>::max()};
+    double bestUpperBoundMinUp{std::numeric_limits<double>::max()};
 
     // Number of edges that violate the relaxed constraint (s_lm).
     int numberOfSubgradients{};

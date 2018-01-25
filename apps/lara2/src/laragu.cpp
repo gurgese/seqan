@@ -81,6 +81,7 @@
 #include "lemon_graph.h"
 #include "tcoffee_interface.h"
 #include "lara_io.h"
+#include "stopwatch.h"
 
 using namespace seqan;
 
@@ -106,6 +107,7 @@ int main (int argc, char const ** argv)
         return res == ArgumentParser::ParseResult::PARSE_ERROR ? 1 : 0;
     setScoreMatrix(options);
 
+    Stopwatch<> totalTime("Total Computation Time of LaRA");
     // Read input files.
     // If one input file is given, then build unique pairs of the input sequences.
     // If two input files are given, then build the cross product of all sequences from the first file
@@ -321,13 +323,13 @@ int main (int argc, char const ** argv)
 
     if (!empty(alignmentTraits))
     {
-        _VV(options, "Plot of the alignmentTraits structure " << std::endl);
+        _VV(options, "Plot of the alignmentTraits structure ");
         plotAlignments(options, alignmentTraits);
     }
 
     if (!empty(optimalAlignTraits))
     {
-        _VV(options, "Plot of the optimalAlignTraits structure " << std::endl);
+        _VV(options, "Plot of the optimalAlignTraits structure ");
         plotAlignments(options, optimalAlignTraits);
     }
 
@@ -338,6 +340,8 @@ int main (int argc, char const ** argv)
         createFastaAlignmentFile(options, alignmentTraits);
     else
         createTCoffeeLib(options, filecontents, alignmentTraits);
+
+    totalTime.print(std::cerr);
 
     return 0;
 }

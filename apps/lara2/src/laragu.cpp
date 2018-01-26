@@ -81,6 +81,7 @@
 #include "lemon_graph.h"
 #include "tcoffee_interface.h"
 #include "lara_io.h"
+#include "stopwatch.h"
 
 using namespace seqan;
 
@@ -106,6 +107,7 @@ int main (int argc, char const ** argv)
         return res == ArgumentParser::ParseResult::PARSE_ERROR ? 1 : 0;
     setScoreMatrix(options);
 
+    Stopwatch<> totalTime("Total Computation Time of LaRA");
     // Read input files.
     // If one input file is given, then build unique pairs of the input sequences.
     // If two input files are given, then build the cross product of all sequences from the first file
@@ -116,9 +118,17 @@ int main (int argc, char const ** argv)
     _VV(options, "Read " << length(filecontents.first.records) << " and "
                          << length(filecontents.second.records) << " records from input files.");
 
-    // If not present, compute the weighted interaction edges using ViennaRNA functions.
-    computeMissingInteractions(filecontents.first.records, options);
-    computeMissingInteractions(filecontents.second.records, options);
+    if (length(options.dotplotFile) == length(filecontents.first.records) + length(filecontents.second.records))
+    {
+        _V(options, "Using given dotplot files to extract the base pair probabilities.");
+        readDotplotFiles(filecontents, options.dotplotFile);
+    }
+    else
+    {
+        // If not present, compute the weighted interaction edges using ViennaRNA functions.
+        computeMissingInteractions(filecontents.first.records, options);
+        computeMissingInteractions(filecontents.second.records, options);
+    }
     _VVV(options, getEbpseqString(filecontents.first) << getEbpseqString(filecontents.second));
 
 
@@ -175,7 +185,7 @@ int main (int argc, char const ** argv)
 
             // Set upper bound (i.e. the relaxed solution = Lagrangian dual).
             traits.upperBound = upperBoundScores[idx];
-            traits.bestUpperBound = std::min(traits.bestUpperBound, traits.upperBound);
+//            traits.bestUpperBound = std::min(traits.bestUpperBound, traits.upperBound); // this value must be changed in agreement with the lower bound
 
             // If lines have changed the lower bound must be calculated.
             if (changedLines || iter == 0)
@@ -199,14 +209,44 @@ int main (int argc, char const ** argv)
                     default:         std::cerr << "Lower Bound method not implemented." << std::endl;
                                      exit(1);
                 }
-
+                _VVV(options,iter << "\tLow bound component MWM/SeqAlignScore for sequences (" << traits.sequenceIndices.first
+                                                              << ","  << traits.sequenceIndices.second << "): "
+                                                              << traits.lowerBound << " / " << traits.sequenceScore);
                 traits.lowerBound += traits.sequenceScore;
             }
-
-            traits.bestLowerBound = std::max(traits.bestLowerBound, traits.lowerBound);
-            _VV(options,"best l/u bounds for sequences (" << traits.sequenceIndices.first << ","
+            // Save best alignment scores for smallest Epslon
+            if( (traits.upperBound - traits.lowerBound) < (traits.bestUpperBound - traits.bestLowerBound) )
+            {
+                traits.bestUpperBound = traits.upperBound;
+                traits.bestLowerBound = traits.lowerBound;
+            }
+            // Save best alignment scores for maximum lowerBound
+            if( traits.lowerBound > traits.bestLowerBoundMaxLow)
+            {
+                traits.bestUpperBoundMaxLow = traits.upperBound;
+                traits.bestLowerBoundMaxLow = traits.lowerBound;
+            }
+            // Save best alignment scores for minimum upperBound
+            if( traits.upperBound < traits.bestUpperBoundMinUp) // TODO verify if there is the possibility to enter here without updating the lowerBound
+            {
+                traits.bestUpperBoundMinUp = traits.upperBound;
+                traits.bestLowerBoundMinUp = traits.lowerBound;
+            }
+//            traits.bestUpperBound = std::min(traits.bestUpperBound, traits.upperBound);
+//            traits.bestLowerBound = std::max(traits.bestLowerBound, traits.lowerBound);
+            _VVV(options,iter << "\tCurrent l/u bounds for sequences (" << traits.sequenceIndices.first << ","
                                                           << traits.sequenceIndices.second << "): "
-                                                          << traits.bestLowerBound << " / " << traits.bestUpperBound);
+                                                          << traits.lowerBound << " / " << traits.upperBound);
+            _VVV(options,iter << "\tBest l/u bounds with maximum LowerBound for sequences (" << traits.sequenceIndices.first << ","
+                              << traits.sequenceIndices.second << "): "
+                              << traits.bestLowerBoundMaxLow << " / " << traits.bestUpperBoundMaxLow);
+            _VVV(options,iter << "\tBest l/u bounds with minimum UpperBound for sequences (" << traits.sequenceIndices.first << ","
+                             << traits.sequenceIndices.second << "): "
+                             << traits.bestLowerBoundMinUp << " / " << traits.bestUpperBoundMinUp);
+            _VV(options,iter << "\tBest l/u bounds with smallest epslon for sequences (" << traits.sequenceIndices.first << ","
+                             << traits.sequenceIndices.second << "): "
+                             << traits.bestLowerBound << " / " << traits.bestUpperBound);
+
             SEQAN_ASSERT_LEQ(traits.bestLowerBound, traits.bestUpperBound);
 
             if (traits.bestUpperBound - traits.bestLowerBound < options.epsilon)
@@ -283,13 +323,13 @@ int main (int argc, char const ** argv)
 
     if (!empty(alignmentTraits))
     {
-        _VV(options, "Plot of the alignmentTraits structure " << std::endl);
+        _VV(options, "Plot of the alignmentTraits structure ");
         plotAlignments(options, alignmentTraits);
     }
 
     if (!empty(optimalAlignTraits))
     {
-        _VV(options, "Plot of the optimalAlignTraits structure " << std::endl);
+        _VV(options, "Plot of the optimalAlignTraits structure ");
         plotAlignments(options, optimalAlignTraits);
     }
 
@@ -300,6 +340,8 @@ int main (int argc, char const ** argv)
         createFastaAlignmentFile(options, alignmentTraits);
     else
         createTCoffeeLib(options, filecontents, alignmentTraits);
+
+    totalTime.print(std::cerr);
 
     return 0;
 }

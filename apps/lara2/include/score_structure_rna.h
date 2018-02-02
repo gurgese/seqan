@@ -76,6 +76,18 @@ public:
             return 0;
         }
     }
+
+    TValue getLambdaValue(unsigned seq1_pos, unsigned seq2_pos) const
+    {
+        if ((*interactions)[seq1_pos].count(seq2_pos) > 0)
+        {
+            return (*interactions)[seq1_pos][seq2_pos].lambdaValue;
+        }
+        else
+        {
+            return 0;
+        }
+    }
 };
 
 // ============================================================================

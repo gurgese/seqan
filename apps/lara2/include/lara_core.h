@@ -521,7 +521,7 @@ void computeNumberOfSubgradients(RnaAlignmentTraits & traits, seqan::String<Posi
             }
             if (stucturalLine)
             {
-                traits.numberOfSubgradients += 2; //TODO Verify this value
+                traits.numberOfSubgradients += 2; // 1; TODO Verify this value
                 appendValue(unclosedLoops, line);
             }
         }

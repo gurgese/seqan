@@ -188,8 +188,8 @@ int main (int argc, char const ** argv)
 //            traits.bestUpperBound = std::min(traits.bestUpperBound, traits.upperBound); // this value must be changed in agreement with the lower bound
 
             // If lines have changed the lower bound must be calculated.
-            if (changedLines || iter == 0)
-            {
+//            if (changedLines || iter == 0) //TODO Verify if this procedure can be restored for reducing the computational time
+//            {
                 _VV(options, "\nalignment " << idx << " in iteration " << iter << " (score " << upperBoundScores[0]
                                             << "):\n" << alignments[idx]);
                 evaluateInteractions(traits, iter);
@@ -213,7 +213,7 @@ int main (int argc, char const ** argv)
                                                               << ","  << traits.sequenceIndices.second << "): "
                                                               << traits.lowerBound << " / " << traits.sequenceScore);
                 traits.lowerBound += traits.sequenceScore;
-            }
+//            }
             // Save best alignment scores for smallest Epslon
             if( (traits.upperBound - traits.lowerBound) < (traits.bestUpperBound - traits.bestLowerBound) )
             {

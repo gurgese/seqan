@@ -11,6 +11,7 @@ tmp/
 local.properties
 .settings/
 .loadpath
+.cbp
 
 # Eclipse Core
 .project
@@ -43,6 +44,13 @@ local.properties
 .springBeans
 /Debug/
 
+# CLion
+cmake-build-debug/
+cmake-build-release/
+
 *~
 
 .idea
+.Rhistory
+demo/rna2.fasta
+test/

@@ -133,11 +133,13 @@ bool evaluateLines(RnaAlignmentTraits & traits, RnaAlignment const & align, Lara
                 traits.lines[lineCount] = sourcePos;
                 changedLines = true;
             }
-
+            traits.sequenceScore += score(traits.structureScore.matrix, *it0, *it1)
+                                  + traits.structureScore.getLambdaValue(sourcePos.first, sourcePos.second);
+//                                    + traits.structureScore.getMapLineValue(sourcePos.first, sourcePos.second);
             ++lineCount;
             ++sourcePos.first;
             ++sourcePos.second;
-            traits.sequenceScore += score(options.laraScoreMatrix, *it0, *it1);
+//            traits.sequenceScore += score(options.laraScoreMatrix, *it0, *it1);
         }
     }
     SEQAN_ASSERT(it0 == itEnd0);
@@ -519,7 +521,7 @@ void computeNumberOfSubgradients(RnaAlignmentTraits & traits, seqan::String<Posi
             }
             if (stucturalLine)
             {
-                traits.numberOfSubgradients += 2;
+                traits.numberOfSubgradients += 2; // 1; TODO Verify this value
                 appendValue(unclosedLoops, line);
             }
         }

@@ -65,19 +65,23 @@ bool evaluateLines(RnaAlignmentTraits & traits, RnaAlignment const & align, Lara
     Row<RnaAlignment>::Type row1 = row(align, 1);
 
     // Get iterators.
-    TGapsIter it0      = begin(row0);
-    TGapsIter itEnd0   = end(row0);
-    TGapsIter it1      = begin(row1);
-    TGapsIter itEnd1   = end(row1);
+    TGapsIter it0    = begin(row0);
+    TGapsIter itEnd0 = end(row0);
+    TGapsIter it1    = begin(row1);
+    TGapsIter itEnd1 = end(row1);
 
     // State whether we have already opened a gap.
-    bool isGapOpen0 = false, isGapOpen1 = false;
+    bool isGapOpen0 = false;
+    bool isGapOpen1 = false;
+
     // Keep track of the sequence positions for lines.
     PositionPair sourcePos(0u, 0u);
+
     // True, if this function changes the recent set of lines, False otherwise.
-    bool changedLines = false;
+//    bool changedLines = false;
     // Sum up the sequence and gap score.
-    traits.sequenceScore = 0;
+    traits.sequenceScore = 0.0;
+    clear(traits.lines);
 
     for (unsigned lineCount = 0u; it0 != itEnd0 && it1 != itEnd1; ++it0, ++it1)
     {
@@ -112,6 +116,7 @@ bool evaluateLines(RnaAlignmentTraits & traits, RnaAlignment const & align, Lara
                 traits.sequenceScore += options.laraGapExtend;
             }
             isGapOpen1 = true;
+            traits.pos2line[sourcePos.first] = UINT_MAX;
             ++sourcePos.first;
         }
         else
@@ -123,19 +128,20 @@ bool evaluateLines(RnaAlignmentTraits & traits, RnaAlignment const & align, Lara
         if (!isGap(it0) && !isGap(it1))
         {
             // create a line
-            if (lineCount >= length(traits.lines))
-            {
-                appendValue(traits.lines, sourcePos);
-                changedLines = true;
-            }
-            else if (traits.lines[lineCount] != sourcePos)
-            {
-                traits.lines[lineCount] = sourcePos;
-                changedLines = true;
-            }
-            traits.sequenceScore += score(traits.structureScore.matrix, *it0, *it1)
-                                  + traits.structureScore.getLambdaValue(sourcePos.first, sourcePos.second);
-//                                    + traits.structureScore.getMapLineValue(sourcePos.first, sourcePos.second);
+            appendValue(traits.lines, sourcePos);
+            traits.pos2line[sourcePos.first] = lineCount;
+//            if (lineCount >= length(traits.lines))
+//            {
+//                appendValue(traits.lines, sourcePos);
+//                changedLines = true;
+//            }
+//            else if (traits.lines[lineCount] != sourcePos)
+//            {
+//                traits.lines[lineCount] = sourcePos;
+//                changedLines = true;
+//            }
+            traits.sequenceScore += score(traits.structureScore.matrix, *it0, *it1);
+
             ++lineCount;
             ++sourcePos.first;
             ++sourcePos.second;
@@ -144,143 +150,59 @@ bool evaluateLines(RnaAlignmentTraits & traits, RnaAlignment const & align, Lara
     }
     SEQAN_ASSERT(it0 == itEnd0);
     SEQAN_ASSERT(it1 == itEnd1);
-    return changedLines;
+//    return changedLines;
+    return true;
 }
 
 // ----------------------------------------------------------------------------
 // Function computeLowerBound()
 // ----------------------------------------------------------------------------
 
-void prepareLowerBoundScores(InteractionScoreMap & validInteractions, RnaAlignmentTraits const & traits)
+double computeLowerBoundGreedy(RnaAlignmentTraits & traits)
 {
-    RnaInteractionGraph const & graph1 = traits.bppGraphH.inter;
-    RnaInteractionGraph const & graph2 = traits.bppGraphV.inter;
-    // iterate all lines that are present in the alignment
-//    for (PositionPair const & line : traits.lines)
-    //std::cout << graph1 << std::endl;
-    //std::cout << graph2 << std::endl;
-    String<unsigned> vectOut1, vectOut2;
-//    unsigned nClosedLoops = 0;
-//    unsigned nLinesInteraction = 0;
-    for(unsigned idx = 0; idx < length(traits.lines) - 1; ++idx)
+    // add vertices to interaction match graph
+    clear(traits.interactionMatchingGraph);
+    forEach(traits.lines, [&traits] (PositionPair const &) { addVertex(traits.interactionMatchingGraph); });
+
+    RnaInteractionGraph const & bppH = traits.bppGraphH.inter;
+    RnaInteractionGraph const & bppV = traits.bppGraphV.inter;
+
+    // add edges: go through all lines
+    for (unsigned lineLIdx = 0; lineLIdx < length(traits.lines); ++lineLIdx)
     {
-        seqan::String<PositionPair > seq2pos;
-        //std::cout << traits.lines[idx].first << " - " << traits.lines[idx].second << std::endl;
-        if (degree(graph1, traits.lines[idx].first) > 0 && degree(graph2, traits.lines[idx].second) > 0) {
-            getVertexAdjacencyVector(vectOut1, graph1, traits.lines[idx].first);
-            for (unsigned x = 0; x < length(vectOut1); ++x) {
-                for (unsigned j = idx + 1; j < length(traits.lines); ++j) {
-                    if (vectOut1[x] == traits.lines[j].first)
+        PositionPair const & lineL = traits.lines[lineLIdx];
+
+        // skip if there are no interactions
+        if (degree(bppH, lineL.first) == 0 || degree(bppV, lineL.second) == 0)
+            continue;
+
+        // check for all adjacent pairs whether they are a line in the current alignment
+        for (RnaAdjacencyIterator adjItH(bppH, lineL.first); !atEnd(adjItH); goNext(adjItH))
+        {
+            // search for an existing lineM that builds a closed cycle with lineL
+            unsigned lineMIdx = traits.pos2line[value(adjItH)];
+            if (lineMIdx != UINT_MAX && lineLIdx < lineMIdx)
+            {
+                PositionPair const & lineM = traits.lines[lineMIdx];
+                for (RnaAdjacencyIterator adjItV(bppV, lineL.second); !atEnd(adjItV); goNext(adjItV))
+                {
+                    if (lineM.second == value(adjItV)) // found a closed cycle
                     {
-//                        std::cout << traits.lines[j].first << " : " << traits.lines[j].second << std::endl;
-                        appendValue(seq2pos, std::make_pair(traits.lines[j].first, traits.lines[j].second));
+                        addEdge(traits.interactionMatchingGraph, lineLIdx, lineMIdx,
+                                cargo(findEdge(bppH, lineL.first, lineM.first)) +
+                                cargo(findEdge(bppV, lineL.second, lineM.second)));
+                        // break out of the two inner for loops and continue with next lineL
+                        //goto nextLineL;
                     }
                 }
             }
-//            ++nLinesInteraction;
         }
-        if(length(seq2pos) > 0)
-        {
-            getVertexAdjacencyVector(vectOut2, graph2, traits.lines[idx].second);
-            for (unsigned w = 0; w < length(seq2pos); ++w)
-            {
-                for (unsigned y = 0; y < length(vectOut2); ++y)
-                if (seq2pos[w].second == vectOut2[y])
-                {
-//                    std::cout << traits.lines[idx].first << " - " << seq2pos[w].first << " = "
-//                              << cargo(findEdge(graph1, traits.lines[idx].first, seq2pos[w].first)) << " | "
-//                              << traits.lines[idx].second << " - " << seq2pos[w].second << " = "
-//                              << cargo(findEdge(graph2, traits.lines[idx].second, seq2pos[w].second))
-//                              << std::endl;
-//                    ++nClosedLoops;
-                    validInteractions[traits.lines[idx].first][seq2pos[w].first]
-                        = cargo(findEdge(graph1, traits.lines[idx].first, seq2pos[w].first))
-                        + cargo(findEdge(graph2, traits.lines[idx].second, seq2pos[w].second));
 
-/*                    if (degree(graph1, traits.lines[j].first) > 0 && degree(graph2, traits.lines[j].second) > 0)
-                    std::cout << "Interaction match: " << traits.lines[idx].first+1 << " - " << traits.lines[idx].second+1
-                              << " | " << traits.lines[j].first+1 << " - " << traits.lines[j].second+1
-                              << " // " << findEdge(graph1, traits.lines[idx].first, traits.lines[j].first)
-                              << " - " << findEdge(graph2, traits.lines[idx].second, traits.lines[j].second)
-                              << std::endl;
-*/
-                }
-            }
-
-        }
-//        traits.numberOfSubgradients = nLoops + 1 - (nClosedLoops * 2); // TODO check this value: It should be referred to the alignment line only or to all the lambda?
-    }
-}
-
-// ----------------------------------------------------------------------------
-// Function computeBounds() version that make use of the lemon MWM
-// ----------------------------------------------------------------------------
-/*
-void computeBounds(RnaAlignmentTraits & traits, InteractionScoreMap * validInteractions) // upper bound computation
-{
-    Graph<Undirected<double> > & graph1 = traits.bppGraphH.inter;
-    Graph<Undirected<double> > & graph2 = traits.bppGraphV.inter;
-
-    // Clear the weight of the upper bound
-    for (std::size_t idx = 0; idx < length(traits.weightLineVect); ++idx)
-    {
-        traits.weightLineVect[idx].weight = 0; // reset best line score
+//        nextLineL:
+//        continue;
     }
 
-    // iterate all lines that are present in the alignment
-    for (PositionPair const & line : traits.lines)
-    {
-        // outgoing interactions in the first sequence
-        for (RnaAdjacencyIterator adj_it1(graph1, line.first); !atEnd(adj_it1); goNext(adj_it1))
-        {
-            double edgeWeight1 = cargo(findEdge(graph1, line.first, value(adj_it1)));
-
-            // outgoing interactions in the second sequence
-            for (RnaAdjacencyIterator adj_it2(graph2, line.second); !atEnd(adj_it2); goNext(adj_it2))
-            {
-                double edgeWeight = edgeWeight1 + cargo(findEdge(graph2, line.second, value(adj_it2)));
-
-                // for lower bound the directed interactions must occur in both orientations
-                if (validInteractions != NULL && line.first < value(adj_it1))
-                {
-                    for (PositionPair const & pairline : traits.lines)
-                    { //TODO make this loop more efficient
-                        if (pairline.first == value(adj_it1) && pairline.second == value(adj_it2))
-                            (*validInteractions)[line.first][pairline.first] = edgeWeight;
-                    }
-                }
-
-//                std::cerr << "Interaction match: " << line.first+1 << " - " << line.second+1
-//                          << " | " << value(adj_it1)+1 << " - " << value(adj_it2)+1 << "\tprob = "
-//                          << edgeWeight1 << " + " << edgeWeight-edgeWeight1 << "\n";
-
-                // for upper bound do not care if interactions are closed by a line
-                if (traits.weightLineVect[line.second].weight < edgeWeight / 2.0)
-                {
-                    traits.weightLineVect[line.second].weight = edgeWeight / 2.0;
-                    traits.weightLineVect[line.second].seq1Index = line.first;
-                    traits.weightLineVect[line.second].lineL.first = value(adj_it1);
-                    traits.weightLineVect[line.second].lineL.second = value(adj_it2);
-//                    std::cerr << "updated\n";
-                }
-            }
-        }
-    }
-}
-*/
-
-double computeLowerBoundGreedy(InteractionScoreMap & interactions)
-{
-    // add vertices
-    RnaInteractionGraph graph;
-    forEach(interactions, [&graph] (ScMap const &) { addVertex(graph); });
-
-    // add edges
-    for (unsigned vertexIdx = 0; vertexIdx < length(interactions); ++vertexIdx)
-        for (ScMap::iterator mapIt = interactions[vertexIdx].begin(); mapIt != interactions[vertexIdx].end(); ++mapIt)
-            addEdge(graph, vertexIdx, mapIt->first, mapIt->second);
-
-    return maximumWeightedMatchingGreedy<5>(graph);
+    return maximumWeightedMatchingGreedy<5>(traits.isInMwmSolution, traits.interactionMatchingGraph);
 };
 
 // ----------------------------------------------------------------------------
@@ -362,33 +284,6 @@ void findMaxWeight(double & maxWeight, unsigned & partnerIndex, RnaInteractionGr
     }
 }
 
-// ----------------------------------------------------------------------------
-// Function updateClosedLoops()
-// ----------------------------------------------------------------------------
-
-void updateClosedLoops(RnaAlignmentTraits & traits)
-{
-//    int tmpIndex = -1;
-    for (PositionPair const & line : traits.lines)
-    {
-        if (traits.interactions[line.first].count(line.second) > 0)
-        {
-            RnaInteraction & interaction = traits.interactions[line.first][line.second];
-            if (interaction.lineL.first ==
-                traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.first
-                && interaction.lineL.second ==
-                   traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.second)
-            {
-                interaction.closedLoop = true;
-/*                if (saveFoundInterPair) //TODO check if this lambda must be updated with the closed loop or not
-                    // if the map is not empty means that the line have been already evaluated in a previous iteration
-                {
-                    traits.interactions[interaction.lineM.first][interaction.lineM.second].closedLoop = true;
-                }
-*/            }
-        }
-    }
-}
 
 // ----------------------------------------------------------------------------
 // Function evaluateInteractions()
@@ -399,118 +294,173 @@ void evaluateInteractions(RnaAlignmentTraits & traits, unsigned const & iter)
     Graph<Undirected<double> > & graph1 = traits.bppGraphH.inter;
     Graph<Undirected<double> > & graph2 = traits.bppGraphV.inter;
 
-    bool flagUpdateClosedLoops = false;
+    //bool flagUpdateClosedLoops = false;
     // iterate all lines that are present in the alignment
     for (PositionPair const & line : traits.lines)
     {
 //        std::cerr << "graph degree " << degree(graph1, line.first) << " - " << degree(graph2, line.second) << std::endl;
         // outgoing interactions in the first sequence
-        bool proceed = false;
-        if (degree(graph1, line.first) > 0 && degree(graph2, line.second) > 0)
-        {
-            if (traits.interactions[line.first].count(line.second) == 0)
-            {
-                proceed = true;
-            } else if (traits.interactions[line.first][line.second].fromUBPairing)
-            {
-                proceed = true;
-            }
-            traits.interactions[line.first][line.second].iterUpdate = iter;
-            if (proceed)
-            {
-                RnaInteraction & interaction = traits.interactions[line.first][line.second];
-                findMaxWeight(interaction.maxProbScoreLine1, interaction.lineM.first, graph1, line.first);
-                interaction.lineL.first = line.first;
+
+        if (degree(graph1, line.first) == 0 || degree(graph2, line.second) == 0)
+            continue;
+
+        if (traits.interactions[line.first].count(line.second) > 0          // skip if interaction exists already
+            && !traits.interactions[line.first][line.second].fromUBPairing) // and was evaluated before
+            continue;
+
+        RnaInteraction & interaction = traits.interactions[line.first][line.second];
+        interaction.lineL = line;
+        interaction.iterUpdate = iter;
+        findMaxWeight(interaction.maxProbScoreLine1, interaction.lineM.first, graph1, line.first);
+
 //            std::cerr << interaction.lineL.first << " : " << interaction.lineM.first << " | " << interaction.maxProbScoreLine1
 //                      << " - " << line.second << std::endl;
-                findMaxWeight(interaction.maxProbScoreLine2, interaction.lineM.second, graph2, line.second);
-                interaction.lineL.second = line.second;
+        findMaxWeight(interaction.maxProbScoreLine2, interaction.lineM.second, graph2, line.second);
+
 //            std::cerr << interaction.lineL.second << " : " << interaction.lineM.second << " | " << interaction.maxProbScoreLine2
 //                      << " - " << line.first << std::endl;
-                interaction.weight = (interaction.maxProbScoreLine1 + interaction.maxProbScoreLine2) / 2;
+        interaction.weight = (interaction.maxProbScoreLine1 + interaction.maxProbScoreLine2) / 2;
 
 //                std::cerr << interaction.lineL.first << " : " << interaction.lineL.second << " = "
 //                          << interaction.weight << " | " << interaction.lineM.first << " : "
 //                          << interaction.lineM.second << " (" << interaction.fromUBPairing << ")" << std::endl;
-                interaction.fromUBPairing = false;
-                flagUpdateClosedLoops = true;
-                if (true) //TODO probably this must be the default and removed from the options
-                    // if the map is not empty means that the line have been already evaluated in a previous iteration
-                {
-                    bool proceed2 = false;
-                    if (traits.interactions[interaction.lineM.first].count(interaction.lineM.second) == 0)
-                    {
-                        proceed2 = true;
-                    } else if (traits.interactions[interaction.lineM.first][interaction.lineM.second].weight < interaction.weight)
-                    {
-                        proceed2 = true;
-                    }
-                    //traits.interactions[interaction.lineM.first][interaction.lineM.second].iterUpdate = iter; //TODO check if needed
-                    if (proceed2)
-                    {
-                        RnaInteraction & pair = traits.interactions[interaction.lineM.first][interaction.lineM.second];
-                        pair.lineL.first = interaction.lineM.first;
-                        pair.lineL.second = interaction.lineM.second;
-                        pair.lineM.first = interaction.lineL.first;
-                        pair.lineM.second = interaction.lineL.second;
-                        pair.weight = interaction.weight;
-                        pair.fromUBPairing = true;
+        interaction.fromUBPairing = false;
+        interaction.lambdaValue = 0.0;
+        //flagUpdateClosedLoops = true;
 
-//                        std::cerr << pair.lineL.first << " : " << pair.lineL.second << " = "
-//                                  << pair.weight << " | " << pair.lineM.first << " : "
-//                                  << pair.lineM.second << " (" << pair.fromUBPairing << ")" << std::endl;
-                    }
-                }
-            }
+
+        if (traits.interactions[interaction.lineM.first].count(interaction.lineM.second) == 0
+            || traits.interactions[interaction.lineM.first][interaction.lineM.second].weight < interaction.weight)
+        {
+            RnaInteraction & pair = traits.interactions[interaction.lineM.first][interaction.lineM.second];
+            pair.lineL = interaction.lineM;
+            pair.lineM = interaction.lineL;
+            pair.weight = interaction.weight;
+            pair.fromUBPairing = true;
+            pair.lambdaValue = 0.0;
+            pair.iterUpdate = iter;
         }
     }
-    if (flagUpdateClosedLoops)
-        updateClosedLoops(traits);
+/*
+    // update which loops are closed
+    for (PositionPair const & line : traits.lines)
+    {
+        if (traits.interactions[line.first].count(line.second) == 0)
+            continue;
+
+        RnaInteraction & interaction = traits.interactions[line.first][line.second];
+        SEQAN_ASSERT(traits.interactions[interaction.lineM.first].count(interaction.lineM.second) > 0);
+        RnaInteraction & pairedInteraction = traits.interactions[interaction.lineM.first][interaction.lineM.second];
+        if (interaction.lineL == pairedInteraction.lineM)
+        {
+            interaction.closedLoop = true;
+            pairedInteraction.closedLoop = true;
+        }
+        else
+        {
+            interaction.closedLoop = false;
+            pairedInteraction.closedLoop = false;
+        }
+
+    }
+    */
+    if (iter == 0)
+        return;
+
+    std::cerr << "upper bound contributions:" << std::endl;
+    double sum = 0;
+    double sumLam = 0;
+    double sumSol = 0;
+
+    for (unsigned lineLIdx = 0u; lineLIdx < length(traits.lines); ++lineLIdx)
+    {
+        PositionPair const & line = traits.lines[lineLIdx];
+        if (traits.interactions[line.first].count(line.second) == 0)
+        {
+            ++lineLIdx;
+            continue;
+        }
+
+        RnaInteraction & interaction = traits.interactions[line.first][line.second];
+        sum += interaction.weight;
+        sumLam += interaction.lambdaValue;
+
+        bool inSolution = false;
+        unsigned lineMIdx = traits.pos2line[interaction.lineM.first];
+        if (lineMIdx != UINT_MAX && interaction.lineM == traits.lines[lineMIdx])
+        {
+            // line M exists in current alignment
+            PositionPair const & lineM = traits.lines[lineMIdx];
+            if (traits.interactions[lineM.first][lineM.second].lineM == line) // closed cycle of maximum weights
+            {
+                auto const & edgeLM = findEdge(traits.interactionMatchingGraph, lineLIdx, lineMIdx);
+                if (edgeLM != 0 && traits.isInMwmSolution[edgeLM->data_id]) // cycle is represented in valid solution
+                    inSolution = true;
+            }
+        }
+
+        if (inSolution)
+            sumSol += interaction.lambdaValue;
+
+        std::cerr << "max_interaction weight = " << interaction.weight
+                  << " lambda = " << interaction.lambdaValue << " ("
+                  << interaction.lineL.first << "," << interaction.lineL.second << " - "
+                  << interaction.lineM.first << "," << interaction.lineM.second << ") "
+                  << "\tin solution: " << (inSolution ? "yes" : "no") << std::endl;
+    }
+
+    std::cerr << "sum upper bound cargo  = " << sum << std::endl;
+    std::cerr << "sum upper bound lambda = " << sumLam << std::endl;
+    std::cerr << "sum lambda in solution = " << sumSol << std::endl;
 }
 
 // ----------------------------------------------------------------------------
 // Function computeNumberOfSubgradients()
 // ----------------------------------------------------------------------------
 
-void computeNumberOfSubgradients(RnaAlignmentTraits & traits, seqan::String<PositionPair> & unclosedLoops)
+void computeNumberOfSubgradients(RnaAlignmentTraits & traits)
 {
     traits.numberOfSubgradients = 0;
-    for (PositionPair const & line : traits.lines)
-    {
-        if (traits.interactions[line.first].count(line.second) > 0)
-        {
-            bool stucturalLine = false;
-/*
-            RnaInteraction &lambdaL = traits.interactions[lineL.first][lineL.second];
+    for (unsigned lineLIdx = 0u; lineLIdx < length(traits.lines); ++lineLIdx) {
+        PositionPair const & line = traits.lines[lineLIdx];
+        if (traits.interactions[line.first].count(line.second) == 0)
+            continue;
 
-            bool closedCircle = false;
-            for (PositionPair const & lineM : traits.lines)
+        RnaInteraction & interaction = traits.interactions[line.first][line.second];
+        unsigned lineMIdx = traits.pos2line[interaction.lineM.first];
+
+        if (lineMIdx == UINT_MAX || interaction.lineM != traits.lines[lineMIdx])
+        {
+            // lineM is not contained in current alignment
+            traits.numberOfSubgradients += 2; // also consider reverse direction (M -> L)
+            //appendValue(unclosedLoops, lineLIdx);
+            //std::cerr << "unclosed: (" << traits.lines[lineLIdx].first << "," << traits.lines[lineLIdx].second << ")\n";
+        }
+        else
+        {
+            auto const & edgeLM = findEdge(traits.interactionMatchingGraph, lineLIdx, lineMIdx);
+            if (edgeLM == 0 || !traits.isInMwmSolution[edgeLM->data_id])
             {
-                if (traits.interactions[lineM.first].count(lineM.second) > 0)
-                    if (lambdaL.lineM.first == lineM.first && lambdaL.lineM.second == lineM.second)
-                        closedCircle = true;
+                // lineM exists, but is not contained in the MWM solution
+                traits.numberOfSubgradients += 1; // reverse direction will be processed in separate iteration
+                //appendValue(unclosedLoops, lineLIdx);
             }
-            if (!closedCircle)
+        }
+    }
+    std::cerr << "number of subgradients = " << traits.numberOfSubgradients << std::endl;
+}
+/*
+        bool stucturalLine = false;
+
+        if (interaction.closedLoop)
+        {
+            if (interaction.iterUpdate >= 0 &&
+                interaction.iterUpdate == traits.interactions[interaction.lineM.first][interaction.lineM.second].iterUpdate)
             {
-                traits.numberOfSubgradients += 2;
-                appendValue(unclosedLoops, lineL);
-            }
-*/
-            RnaInteraction & interaction = traits.interactions[line.first][line.second];
-            if (interaction.closedLoop)
-            {
-                if (interaction.iterUpdate >= 0 &&
-                    interaction.iterUpdate == traits.interactions[interaction.lineM.first][interaction.lineM.second].iterUpdate)
-                {
-                    if (interaction.lineL.first !=
-                        traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.first
-                        || interaction.lineL.second !=
-                           traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.second)
-                    {
-                        stucturalLine = true;
-                    }
-                }
-                else
+                if (interaction.lineL.first !=
+                    traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.first
+                    || interaction.lineL.second !=
+                       traits.interactions[interaction.lineM.first][interaction.lineM.second].lineM.second)
                 {
                     stucturalLine = true;
                 }
@@ -519,35 +469,86 @@ void computeNumberOfSubgradients(RnaAlignmentTraits & traits, seqan::String<Posi
             {
                 stucturalLine = true;
             }
-            if (stucturalLine)
-            {
-                traits.numberOfSubgradients += 2; // 1; TODO Verify this value
-                appendValue(unclosedLoops, line);
-            }
         }
+        else
+        {
+            stucturalLine = true;
+        }
+        if (stucturalLine)
+        {
+            traits.numberOfSubgradients += 2; // 1; TODO Verify this value
+            appendValue(unclosedLoops, line);
+        }
+
     }
-}
+*/
+
 
 // ----------------------------------------------------------------------------
 // Function updateLambdaValues()
 // ----------------------------------------------------------------------------
 
-void updateLambdaValues(RnaAlignmentTraits & traits, seqan::String<PositionPair> const & unclosedLoops)
+void updateLambdaValues(RnaAlignmentTraits & traits)
 {
-    for (PositionPair const & lineL : unclosedLoops)
-    {
-        if (traits.interactions[lineL.first].count(lineL.second) > 0)
-        {
-            RnaInteraction & interaction = traits.interactions[lineL.first][lineL.second];
-            interaction.lambdaValue -= traits.stepSize;
+//    for (unsigned lineLIdx : unclosedLoops)
+//    {
+//        PositionPair const & lineL = traits.lines[lineLIdx];
+//        if (traits.interactions[lineL.first].count(lineL.second) == 0)
+//            continue;
+//
+//        RnaInteraction & interaction = traits.interactions[lineL.first][lineL.second];
+//        interaction.lambdaValue -= traits.stepSize;
+//
+//        // Check whether lambda of paired lineM directs back to lineL
+//        RnaInteraction & paired = traits.interactions[interaction.lineM.first][interaction.lineM.second];
+//        if (paired.lineM == interaction.lineL)
+//        {
+//            paired.lambdaValue += traits.stepSize;
+//        }
+//    }
 
-            // Check whether lambda of paired lineM directs back to lineL
-            RnaInteraction & paired = traits.interactions[interaction.lineM.first][interaction.lineM.second];
-            if (paired.lineM == interaction.lineL)
+    for (unsigned lineLIdx = 0u; lineLIdx < length(traits.lines); ++lineLIdx)
+    {
+        PositionPair const & lineL = traits.lines[lineLIdx];
+        if (traits.interactions[lineL.first].count(lineL.second) == 0u)
+        {
+            SEQAN_ASSERT_EQ(degree(traits.interactionMatchingGraph, lineLIdx), 0u);
+            continue;
+        }
+
+        RnaInteraction & interaction = traits.interactions[lineL.first][lineL.second];
+        double lambdaChange = std::min(interaction.weight + interaction.lambdaValue, traits.stepSize);
+        unsigned lineMIdx = traits.pos2line[interaction.lineM.first];
+
+        if (lineMIdx != UINT_MAX && interaction.lineM == traits.lines[lineMIdx])
+        {
+            // line M exists in current alignment
+            PositionPair const & lineM = traits.lines[lineMIdx];
+            if (traits.interactions[lineM.first][lineM.second].lineM == lineL) // closed cycle of maximum weights
             {
-                paired.lambdaValue += traits.stepSize;
+                auto const & edgeLM = findEdge(traits.interactionMatchingGraph, lineLIdx, lineMIdx);
+                SEQAN_ASSERT(edgeLM != 0);
+                if (traits.isInMwmSolution[edgeLM->data_id]) // cycle is represented in valid solution
+                {
+                    interaction.lambdaValue = 0.0;
+                    traits.interactions[interaction.lineM.first][interaction.lineM.second].lambdaValue = 0.0;
+                    continue;
+                }
+            }
+
+            for (RnaAdjacencyIterator adjIt(traits.interactionMatchingGraph, lineLIdx); !atEnd(adjIt); goNext(adjIt))
+            {
+                auto const & edgeLM = findEdge(traits.interactionMatchingGraph, lineLIdx, value(adjIt));
+                if (traits.isInMwmSolution[edgeLM->data_id])
+                {
+                    SEQAN_ASSERT_LEQ(getCargo(edgeLM) / 2.0, interaction.weight);
+                    lambdaChange = std::min(lambdaChange, interaction.weight + interaction.lambdaValue - (getCargo(edgeLM) / 2.0));
+                }
             }
         }
+
+        interaction.lambdaValue -= lambdaChange;
+        traits.interactions[interaction.lineM.first][interaction.lineM.second].lambdaValue += lambdaChange;
     }
 }
 

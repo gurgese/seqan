@@ -66,17 +66,14 @@ public:
     {
         if ((*interactions)[seq1_pos].count(seq2_pos) > 0)
         {
-//            if((*interactions)[seq1_pos][seq2_pos].closedLoop)
-//                return (*interactions)[seq1_pos][seq2_pos].weight;
-//            else
-            return ((*interactions)[seq1_pos][seq2_pos].lambdaValue + (*interactions)[seq1_pos][seq2_pos].weight);
+            return (*interactions)[seq1_pos][seq2_pos].weight + (*interactions)[seq1_pos][seq2_pos].lambdaValue;
         }
         else
         {
             return 0;
         }
     }
-
+/*
     TValue getLambdaValue(unsigned seq1_pos, unsigned seq2_pos) const
     {
         if ((*interactions)[seq1_pos].count(seq2_pos) > 0)
@@ -88,6 +85,7 @@ public:
             return 0;
         }
     }
+*/
 };
 
 // ============================================================================

@@ -152,6 +152,9 @@ struct RnaAlignmentTraits
 
     // Mask that represents the matches from the computed alignment
     seqan::String<PositionPair> lines;
+    seqan::String<unsigned> pos2line;
+    seqan::String<bool> isInMwmSolution;
+    RnaInteractionGraph interactionMatchingGraph;
 
 //    TWeightLine lowerBoundVect;
 //    This field is used to approximate the maximum weighted match If tests of this usage are positive we can consider

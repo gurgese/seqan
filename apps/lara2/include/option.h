@@ -110,7 +110,7 @@ struct LaraOptions
 // number of non-decreasing iterations
     unsigned nonDecreasingIterations{50u};
 // method to be used for the computation of the Lower bound (MWM or approximation can be chosen)
-    unsigned lowerBoundMethod{MWM_LEMON};
+    unsigned lowerBoundMethod{MWM_GREEDY};
 // value to be considered for the equality of upper and lower bounds difference
     double epsilon{0.0001};
 // my, necessary for computing appropriate step sizes
@@ -258,7 +258,7 @@ void setupArgumentParser(ArgumentParser & parser, TOption const & /* options */)
 
     addOption(parser, ArgParseOption("lbm", "lowerBoundMethod",
                                      "method to be used for the computation of the Lower bound (0: LEMON, 1: GREEDY, "
-                                         "2: SIMPLE) (0)",
+                                         "2: SIMPLE) (1)",
                                      ArgParseArgument::INTEGER, "INT"));
 
     addOption(parser, ArgParseOption("ep", "epsilon",

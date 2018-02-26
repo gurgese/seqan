@@ -145,6 +145,8 @@ int main (int argc, char const ** argv)
         resize(traits.interactions, numVertices(traits.bppGraphH.inter));
         // Allocate capacity for lines: the length of the shorter sequence is the maximum number of expressed lines.
         reserve(traits.lines, std::min(numVertices(traits.bppGraphH.inter), numVertices(traits.bppGraphV.inter)));
+        // Allow constant time look-up of a sequence position in the lines string.
+        resize(traits.pos2line, numVertices(traits.bppGraphH.inter), UINT_MAX);
 
         traits.structureScore.matrix = options.laraScoreMatrix;
         traits.structureScore.interactions = & traits.interactions;
@@ -177,11 +179,13 @@ int main (int argc, char const ** argv)
         bool foundAnOptimalAlignment = false;
         structuralAlignment(upperBoundScores, alignments, alignmentTraits, options);
 
-        #pragma omp parallel for num_threads(options.threads)
+        // #pragma omp parallel for num_threads(options.threads)
         for (unsigned idx = 0; idx < length(alignments); ++idx)
         {
             RnaAlignmentTraits & traits = alignmentTraits[idx];
-            bool const changedLines = evaluateLines(traits, alignments[idx], options);
+            evaluateLines(traits, alignments[idx], options);
+
+            traits.lowerBound = computeLowerBoundGreedy(traits);
 
             // Set upper bound (i.e. the relaxed solution = Lagrangian dual).
             traits.upperBound = upperBoundScores[idx];
@@ -194,8 +198,9 @@ int main (int argc, char const ** argv)
                                             << "):\n" << alignments[idx]);
                 evaluateInteractions(traits, iter);
 
-                InteractionScoreMap validInteractionScores;
+//                InteractionScoreMap validInteractionScores;
                 // The scores are referenced by the index of the first sequence.
+            /*
                 validInteractionScores.resize(numVertices(traits.bppGraphH.inter));
                 prepareLowerBoundScores(validInteractionScores, traits);
 
@@ -203,23 +208,57 @@ int main (int argc, char const ** argv)
                 {
                     case MWM_LEMON:  traits.lowerBound = myLemon::computeLowerBoundScore(validInteractionScores);
                                      break;
-                    case MWM_GREEDY: traits.lowerBound = computeLowerBoundGreedy(validInteractionScores);
+                    case MWM_GREEDY: traits.lowerBound = computeLowerBoundGreedy(traits);
                                      break;
                     case MWM_SIMPLE: // computeBounds(traits, NULL);
                     default:         std::cerr << "Lower Bound method not implemented." << std::endl;
                                      exit(1);
                 }
+            */
+
                 _VVV(options,iter << "\tLow bound component MWM/SeqAlignScore for sequences (" << traits.sequenceIndices.first
                                                               << ","  << traits.sequenceIndices.second << "): "
                                                               << traits.lowerBound << " / " << traits.sequenceScore);
                 traits.lowerBound += traits.sequenceScore;
 //            }
             // Save best alignment scores for smallest Epslon
-            if( (traits.upperBound - traits.lowerBound) < (traits.bestUpperBound - traits.bestLowerBound) )
+//            if( (traits.upperBound - traits.lowerBound) < (traits.bestUpperBound - traits.bestLowerBound) )
+//            {
+//                traits.bestUpperBound = traits.upperBound;
+//                traits.bestLowerBound = traits.lowerBound;
+//            }
+            //std::cerr << traits.interactionMatchingGraph << std::endl;
+
+            if (options.verbose == 3)
             {
-                traits.bestUpperBound = traits.upperBound;
-                traits.bestLowerBound = traits.lowerBound;
+                std::cerr << "isInMwmSolution: ";
+                for (unsigned i : traits.isInMwmSolution) std::cerr << i << " ";
+                std::cerr << std::endl;
+
+                std::cerr << "line contributions:\n";
+                double sum = 0;
+                for (Iterator<Graph<Undirected<double> >, EdgeIterator>::Type edgeIt(
+                traits.interactionMatchingGraph); !atEnd(edgeIt); goNext(edgeIt))
+                {
+                    if (traits.isInMwmSolution[(*edgeIt)->data_id])
+                    {
+                        sum += getCargo(*edgeIt);
+                        std::cerr << "edge " << (*edgeIt)->data_id
+                                  << " (" << source(*edgeIt) << "," << target(*edgeIt)
+                                  << ")\tcargo = " << getCargo(*edgeIt) << "\t(" << traits.lines[source(*edgeIt)].first
+                                  << "," << traits.lines[source(*edgeIt)].second
+                                  << " - " << traits.lines[target(*edgeIt)].first << ","
+                                  << traits.lines[target(*edgeIt)].second << ")" << std::endl;
+                    }
+                }
+                std::cerr << "sum cargo = " << sum << std::endl;
+                std::cerr << std::endl;
+
+                std::cerr << "pos2line vector: ";
+                for (unsigned i : traits.pos2line) std::cerr << i << " ";
+                std::cerr << std::endl;
             }
+            /*
             // Save best alignment scores for maximum lowerBound
             if( traits.lowerBound > traits.bestLowerBoundMaxLow)
             {
@@ -232,24 +271,27 @@ int main (int argc, char const ** argv)
                 traits.bestUpperBoundMinUp = traits.upperBound;
                 traits.bestLowerBoundMinUp = traits.lowerBound;
             }
-//            traits.bestUpperBound = std::min(traits.bestUpperBound, traits.upperBound);
-//            traits.bestLowerBound = std::max(traits.bestLowerBound, traits.lowerBound);
-            _VVV(options,iter << "\tCurrent l/u bounds for sequences (" << traits.sequenceIndices.first << ","
-                                                          << traits.sequenceIndices.second << "): "
-                                                          << traits.lowerBound << " / " << traits.upperBound);
+            */
+
+            traits.bestUpperBound = std::min(traits.bestUpperBound, traits.upperBound);
+            traits.bestLowerBound = std::max(traits.bestLowerBound, traits.lowerBound);
+
+            _VVV(options,iter << "\tCurrent l/u bounds for sequences ("
+                              << traits.sequenceIndices.first << "," << traits.sequenceIndices.second << "): "
+                              << traits.lowerBound << " / " << traits.upperBound);
+            /*
             _VVV(options,iter << "\tBest l/u bounds with maximum LowerBound for sequences (" << traits.sequenceIndices.first << ","
                               << traits.sequenceIndices.second << "): "
                               << traits.bestLowerBoundMaxLow << " / " << traits.bestUpperBoundMaxLow);
             _VVV(options,iter << "\tBest l/u bounds with minimum UpperBound for sequences (" << traits.sequenceIndices.first << ","
                              << traits.sequenceIndices.second << "): "
                              << traits.bestLowerBoundMinUp << " / " << traits.bestUpperBoundMinUp);
-            _VV(options,iter << "\tBest l/u bounds with smallest epslon for sequences (" << traits.sequenceIndices.first << ","
-                             << traits.sequenceIndices.second << "): "
+            */
+            _VV(options,iter << "\tBest l/u bounds for sequences ("
+                             << traits.sequenceIndices.first << "," << traits.sequenceIndices.second << "): "
                              << traits.bestLowerBound << " / " << traits.bestUpperBound);
 
-            SEQAN_ASSERT_LEQ(traits.bestLowerBound, traits.bestUpperBound);
-
-            if (traits.bestUpperBound - traits.bestLowerBound < options.epsilon)
+            if (std::abs(traits.bestUpperBound - traits.bestLowerBound) < options.epsilon)
             {
                 // This alignment is already optimal.
                 isOptimal[idx] = true;
@@ -258,9 +300,9 @@ int main (int argc, char const ** argv)
             }
             else
             {
+                SEQAN_ASSERT_LEQ(traits.bestLowerBound, traits.bestUpperBound);
                 // Compute the number of active subgradients (s_lm).
-                seqan::String<PositionPair> unclosedLoops;
-                computeNumberOfSubgradients(traits, unclosedLoops);
+                computeNumberOfSubgradients(traits);
 
                 //  Compute the step size for the subgradient update.
                 double const previousStepSize = traits.stepSize;
@@ -293,7 +335,7 @@ int main (int argc, char const ** argv)
                 }
 
                 // Update subgradients using the new unclosed interactions.
-                updateLambdaValues(traits, unclosedLoops);
+                updateLambdaValues(traits);
             }
             saveBestAligns(traits, alignments[idx], upperBoundScores[idx], iter);
         }
@@ -341,7 +383,8 @@ int main (int argc, char const ** argv)
     else
         createTCoffeeLib(options, filecontents, alignmentTraits);
 
-    totalTime.print(std::cerr);
+    if (options.verbose > 0)
+        totalTime.print(std::cerr);
 
     return 0;
 }

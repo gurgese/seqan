@@ -128,7 +128,7 @@ inline TCargo _evaluateConflicts(uint32_t & isUsed, std::array<TCargo, BLOCKSIZE
 
 // Compute greedy MWM (performance ratio 1/2)
 template <long unsigned BLOCKSIZE = 1, typename TCargo>
-TCargo maximumWeightedMatchingGreedy(Graph<Undirected<TCargo> > const & graph)
+TCargo maximumWeightedMatchingGreedy(String<bool> & isInMwmSolution, Graph<Undirected<TCargo> > const & graph)
 {
     typedef Graph<Undirected<TCargo> > TUGraph;
     typedef typename EdgeDescriptor<TUGraph>::Type TEdgeDescr;
@@ -141,6 +141,8 @@ TCargo maximumWeightedMatchingGreedy(Graph<Undirected<TCargo> > const & graph)
     std::vector<bool> conflictFree;
     reserve(edges, numEdges(graph));
     resize(conflictFree, numEdges(graph), true);
+    clear(isInMwmSolution);
+    resize(isInMwmSolution, numEdges(graph), false);
 
     for (TEdgeIter edgeIt(graph); !atEnd(edgeIt); goNext(edgeIt))
         edges.push_back(edgeIt);
@@ -159,6 +161,7 @@ TCargo maximumWeightedMatchingGreedy(Graph<Undirected<TCargo> > const & graph)
                 continue;
 
             maxWeight += getCargo(edge);  // edge is contained in the matching
+            isInMwmSolution[edge->data_id] = true;
 
             // mark all adjacent edges
             TVertexDescr const & src = getSource(edge);
@@ -223,6 +226,7 @@ TCargo maximumWeightedMatchingGreedy(Graph<Undirected<TCargo> > const & graph)
                 if (isUsed & (1 << i))  // i-th selection is in the MWM
                 {
                     maxWeight += getCargo(*edges[selection[i]]);
+                    isInMwmSolution[(*edges[selection[i]])->data_id] = true;
 
                     // mark all adjacent edges
                     TVertexDescr const &src = getSource(*edges[selection[i]]);

@@ -73,7 +73,6 @@ public:
             return 0;
         }
     }
-/*
     TValue getLambdaValue(unsigned seq1_pos, unsigned seq2_pos) const
     {
         if ((*interactions)[seq1_pos].count(seq2_pos) > 0)
@@ -85,7 +84,6 @@ public:
             return 0;
         }
     }
-*/
 };
 
 // ============================================================================
@@ -219,6 +217,13 @@ score(Score<TValue, RnaStructureScore<TScoreMatrix, TOutgoingInteractions> > con
     */
     // " mapLine =  " << me._mapLine[position(entry1)][position(entry2)] << std::endl; // me._mapLine[position(entry1)][position(entry2)]
 // return score(me.score_matrix, (*entry1._seq)[position(entry1)] , (*entry2._seq)[position(entry2)]); // Normal Score using the substitutional matrix
+/*
+    std::cout << (*entry1._seq)[position(entry1)] << " " << (*entry2._seq)[position(entry2)] << "\t"
+              << position(entry1) << " " << position(entry2) << "\t"
+              << me.getMapLineValue(position(entry1), position(entry2)) << "\t"
+              << score(me.matrix, (*entry1._seq)[position(entry1)], (*entry2._seq)[position(entry2)])
+              << std::endl;
+*/
     return score(me.matrix, (*entry1._seq)[position(entry1)],
                  (*entry2._seq)[position(entry2)]) + me.getMapLineValue(position(entry1), position(entry2));
 }

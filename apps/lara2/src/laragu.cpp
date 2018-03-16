@@ -143,6 +143,8 @@ int main (int argc, char const ** argv)
     {
         // The lambda structs are referenced by the index of the first sequence.
         resize(traits.interactions, numVertices(traits.bppGraphH.inter));
+        resize(traits.newLambdas, numVertices(traits.bppGraphH.inter));
+        createInterLines(traits.interactions, traits.newLambdas, traits.numberOfEdgesInClosedLoops, traits.bppGraphH.inter, traits.bppGraphV.inter);
         // Allocate capacity for lines: the length of the shorter sequence is the maximum number of expressed lines.
         reserve(traits.lines, std::min(numVertices(traits.bppGraphH.inter), numVertices(traits.bppGraphV.inter)));
         // Allow constant time look-up of a sequence position in the lines string.
@@ -163,16 +165,17 @@ int main (int argc, char const ** argv)
 
     // Calculate the initial alignment scores.
     String<double> upperBoundScores;
+// TODO check this that maybe is not anymore necessary because do not give any contribution. (pay attention because in this function we initialize the alignment vector)
     initialAlignment(upperBoundScores, alignments, options);
     _VV(options, "\ninitial sequence alignment (score " << upperBoundScores[0] << "):\n" << alignments[0]);
-
+/*
     // Evaluate the lines and interactions.
     for (unsigned idx = 0u; idx < length(alignments); ++idx)
     {
         evaluateLines(alignmentTraits[idx], alignments[idx], options);
         evaluateInteractions(alignmentTraits[idx], 0u);
     }
-
+*/
     // ITERATIONS OF ALIGNMENT AND MWM
     for (unsigned iter = 0u; iter < options.iterations && length(alignments) > 0u; ++iter)
     {
@@ -185,7 +188,13 @@ int main (int argc, char const ** argv)
             RnaAlignmentTraits & traits = alignmentTraits[idx];
             evaluateLines(traits, alignments[idx], options);
 
-            traits.lowerBound = computeLowerBoundGreedy(traits);
+            traits.lowerBound = computeLowerBoundGreedy(traits); // TODO update this function using closed loops available in InterLine datastructure
+
+            traits.numberOfEdgesInMwmSolution = 0;
+            for(bool edge: traits.isInMwmSolution)
+                if(edge)
+                    traits.numberOfEdgesInMwmSolution += 2;
+            traits.numberOfSubgradients = traits.numberOfEdgesInClosedLoops - traits.numberOfEdgesInMwmSolution;
 
             // Set upper bound (i.e. the relaxed solution = Lagrangian dual).
             traits.upperBound = upperBoundScores[idx];
@@ -196,7 +205,7 @@ int main (int argc, char const ** argv)
 //            {
                 _VV(options, "\nalignment " << idx << " in iteration " << iter << " (score " << upperBoundScores[0]
                                             << "):\n" << alignments[idx]);
-                evaluateInteractions(traits, iter);
+                //evaluateInteractions(traits, iter); //TODO confirm that this function is not anymore necessary
 
 //                InteractionScoreMap validInteractionScores;
                 // The scores are referenced by the index of the first sequence.
@@ -302,7 +311,7 @@ int main (int argc, char const ** argv)
             {
                 SEQAN_ASSERT_LEQ(traits.bestLowerBound, traits.bestUpperBound);
                 // Compute the number of active subgradients (s_lm).
-                computeNumberOfSubgradients(traits);
+                //computeNumberOfSubgradients2(traits); //TODO remove previous function and to marge this with the computation of closed loops we can easly
 
                 //  Compute the step size for the subgradient update.
                 double const previousStepSize = traits.stepSize;
@@ -335,7 +344,7 @@ int main (int argc, char const ** argv)
                 }
 
                 // Update subgradients using the new unclosed interactions.
-                updateLambdaValues(traits);
+                updateLambdaValues2(traits); //TODO remove previous function
             }
             saveBestAligns(traits, alignments[idx], upperBoundScores[idx], iter);
         }

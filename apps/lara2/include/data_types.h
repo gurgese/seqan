@@ -112,6 +112,34 @@ typedef seqan::Graph<seqan::Undirected<double> > RnaInteractionGraph;
 
 struct LaraOptions;
 
+typedef struct InterLinePosWeight
+{
+    int posSeq1{-1};
+    int posSeq2{-1};
+    double weight{0};
+    double lambdaValue{0};
+}InterLinePosWeight;
+
+// lambda value for subgradient optimization, initialized with 0
+struct InterLine
+{
+    double lambdaValue{0};
+    double weight{0};
+    PositionPair lineM; // MaxLine associated
+    std::map<PositionPair, InterLinePosWeight> lineBegin;
+    std::map<PositionPair, InterLinePosWeight> lineEnd;
+
+    //TODO remove these
+    bool closedLoop{false};
+    PositionPair lineL{};
+    int iterUpdate{-1};
+    // This flag is used for saving mates found during the upper bound update of the line weights.
+    bool fromUBPairing{false};
+    double maxProbScoreLine1{0};
+    double maxProbScoreLine2{0};
+};
+
+//TODO remove this
 // lambda value for subgradient optimization, initialized with 0
 struct RnaInteraction
 {
@@ -127,7 +155,8 @@ struct RnaInteraction
     bool fromUBPairing{false};
 };
 
-typedef seqan::String<std::map<unsigned, RnaInteraction> > OutgoingInteractions;
+typedef seqan::String<std::map<unsigned, InterLine> > OutgoingInteractions; //This is a sort of map, with first index we access vector, while with second index we access the map
+typedef seqan::String<std::map<unsigned, InterLinePosWeight> > NewLambdasVect; // This structure will be used for update lambdas
 
 typedef seqan::Score<double, RnaStructureScore<RnaScoreMatrix, OutgoingInteractions> > LaraScoringScheme;
 
@@ -174,6 +203,9 @@ struct RnaAlignmentTraits
     double bestUpperBoundMaxLow{std::numeric_limits<double>::max()};
     double bestUpperBoundMinUp{std::numeric_limits<double>::max()};
 
+    // Number of edges that are potentially part of closed loops.
+    int numberOfEdgesInClosedLoops{0};
+    int numberOfEdgesInMwmSolution{0};
     // Number of edges that violate the relaxed constraint (s_lm).
     int numberOfSubgradients{};
     // Step size for lambda changes (gamma).
@@ -192,6 +224,7 @@ struct RnaAlignmentTraits
 
     // String with size seq1 storing all the aligned lines
     OutgoingInteractions interactions;
+    NewLambdasVect newLambdas;
 
     // Scoring scheme used for the structural alignment
     LaraScoringScheme structureScore;

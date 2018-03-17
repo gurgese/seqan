@@ -511,28 +511,28 @@ void evaluateInteractions(RnaAlignmentTraits & traits, unsigned const & iter)
 // Function computeNumberOfSubgradients()
 // ----------------------------------------------------------------------------
 
-void computeNumberOfSubgradients2(RnaAlignmentTraits & traits)
-{
-    traits.numberOfSubgradients = 0; //TODO verify what happens if no structure is provided this value to 0 can give problems in the division
-    for (unsigned idx = 0u; idx < length(traits.interactions); ++idx)
-    {
-        for (const auto &interPair : traits.interactions[idx])
-        {
-            std::cout << idx << " - " << interPair.first << " || ";
-            std::cout << interPair.second.lineM.first << " - "
-                      << interPair.second.lineM.second << "\t:\t";
-            std::cout << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineM.first << " - "
-                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineM.second << "\n";
-            traits.numberOfSubgradients += length(interPair.second.lineBegin) + length(interPair.second.lineEnd);
-            if (idx == traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineM.first &&
-                interPair.first == traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineM.second)
-            {
-                --traits.numberOfSubgradients;
-            }
-        }
-    }
-    std::cerr << "number of subgradients = " << traits.numberOfSubgradients << std::endl;
-}
+//void computeNumberOfSubgradients2(RnaAlignmentTraits & traits)
+//{
+//    traits.numberOfSubgradients = 0; //TODO verify what happens if no structure is provided this value to 0 can give problems in the division
+//    for (unsigned idx = 0u; idx < length(traits.interactions); ++idx)
+//    {
+//        for (const auto &interPair : traits.interactions[idx])
+//        {
+//            std::cout << idx << " - " << interPair.first << " || ";
+//            std::cout << interPair.second.lineM.first << " - "
+//                      << interPair.second.lineM.second << "\t:\t";
+//            std::cout << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineM.first << " - "
+//                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineM.second << "\n";
+//            traits.numberOfSubgradients += length(interPair.second.lineBegin) + length(interPair.second.lineEnd);
+//            if (idx == traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineM.first &&
+//                interPair.first == traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineM.second)
+//            {
+//                --traits.numberOfSubgradients;
+//            }
+//        }
+//    }
+//    std::cerr << "number of subgradients = " << traits.numberOfSubgradients << std::endl;
+//}
 
 
 // ----------------------------------------------------------------------------
@@ -679,17 +679,17 @@ void updateLambdaValues(RnaAlignmentTraits & traits)
 
 void updateLambdaValues2(RnaAlignmentTraits & traits, LaraOptions const & options)
 {
-    RnaInteractionGraph const & bppH = traits.bppGraphH.inter;
-    RnaInteractionGraph const & bppV = traits.bppGraphV.inter;
+//    RnaInteractionGraph const & bppH = traits.bppGraphH.inter;
+//    RnaInteractionGraph const & bppV = traits.bppGraphV.inter;
     std::cout << "Evaluate Lambda " << std::endl;
     //std::vector<InterLinePosWeight> newLambdas;
     //InterLinePosWeight newLambdaElem; // In this structure the weight field is used for storing the best Lambda.
-    for (int ntSeq1Idx = 0; ntSeq1Idx < length(traits.interactions); ++ntSeq1Idx)
+    for (unsigned ntSeq1Idx = 0u; ntSeq1Idx < length(traits.interactions); ++ntSeq1Idx) // position in seq1
     {
-        for (auto &interPair : traits.interactions[ntSeq1Idx])
+        for (auto &interPair : traits.interactions[ntSeq1Idx]) // the current line [seq2 pos, InterLine]
         {
             InterLinePosWeight newLambdaElem; // In this structure the weight field is used for storing the best Lambda.
-            for (auto &endPair : interPair.second.lineEnd)
+            for (auto &endPair : interPair.second.lineEnd) // scan pairs on the right
             {
                 /*std::cout << "L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue  << " W1:" << interPair.second.weight
                           <<  "\t L2:" << endPair.second.posSeq1 << "-" << endPair.second.posSeq2 << " = WL:"
@@ -697,6 +697,7 @@ void updateLambdaValues2(RnaAlignmentTraits & traits, LaraOptions const & option
                           << traits.interactions[endPair.second.posSeq1][endPair.second.posSeq2].lambdaValue
                           << std::endl;
                 */
+                // if uninitialised
                 if( newLambdaElem.posSeq1 < 0 || ( (newLambdaElem.weight + newLambdaElem.lambdaValue <
                                                     endPair.second.weight + endPair.second.lambdaValue) ) )
                 {
@@ -706,7 +707,7 @@ void updateLambdaValues2(RnaAlignmentTraits & traits, LaraOptions const & option
                     newLambdaElem.lambdaValue = endPair.second.lambdaValue;
                 }
             }
-            for (auto &beginPair : interPair.second.lineBegin)
+            for (auto &beginPair : interPair.second.lineBegin) // scan pairs on the left
             {
                 /*std::cout << "L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue  << " W1:" << interPair.second.weight
                           <<  "\t L2:" << beginPair.second.posSeq1 << "-" << beginPair.second.posSeq2 << " = WL:"
@@ -725,7 +726,7 @@ void updateLambdaValues2(RnaAlignmentTraits & traits, LaraOptions const & option
             }
             interPair.second.weight = newLambdaElem.weight;
             interPair.second.lineM = std::make_pair (newLambdaElem.posSeq1, newLambdaElem.posSeq2);
-            interPair.second.lambdaValue = newLambdaElem.lambdaValue;
+            //interPair.second.lambdaValue = newLambdaElem.lambdaValue;
         }
         /*
         for (auto &interPair : traits.interactions[ntSeq1Idx])
@@ -755,33 +756,37 @@ void updateLambdaValues2(RnaAlignmentTraits & traits, LaraOptions const & option
          */
     }
     std::cout << "Update Lambda " << std::endl;
-    for (int ntSeq1Idx = 0; ntSeq1Idx < length(traits.interactions); ++ntSeq1Idx)
+    for (unsigned ntSeq1Idx = 0u; ntSeq1Idx < length(traits.interactions); ++ntSeq1Idx)
     {
         for (auto &interPair : traits.interactions[ntSeq1Idx])
         {
-            /*std::cout << "L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue  << " W1:" << interPair.second.weight
-                          <<  "\t L2:" << interPair.second.lineM.first << "-" << interPair.second.lineM.second << " = WL:"
-                          << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].weight << " LA2:"
-                          << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lambdaValue
-                         << std::endl;
-            */
-            interPair.second.lambdaValue -= traits.stepSize;
+            std::cout << "before) L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue
+                      << " W1:" << interPair.second.weight
+                      << "\t L2:" << interPair.second.lineM.first << "-" << interPair.second.lineM.second << " LA2:"
+                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lambdaValue
+                      << " = W2:"
+                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].weight
+                      << std::endl;
+
+            interPair.second.lambdaValue -= traits.stepSize; // gamma
             traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lambdaValue += traits.stepSize;
             if(ntSeq1Idx < interPair.second.lineM.first)
             {
                 interPair.second.lineEnd[std::make_pair (interPair.second.lineM.first, interPair.second.lineM.second)].lambdaValue += traits.stepSize;
-                traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineBegin[std::make_pair (ntSeq1Idx, interPair.first)].lambdaValue -= traits.stepSize;
+                traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineBegin[std::make_pair ((int)ntSeq1Idx, interPair.first)].lambdaValue -= traits.stepSize;
             } else
             {
+                SEQAN_ASSERT(ntSeq1Idx != interPair.second.lineM.first);
                 interPair.second.lineBegin[std::make_pair (interPair.second.lineM.first, interPair.second.lineM.second)].lambdaValue += traits.stepSize;
-                traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineEnd[std::make_pair (ntSeq1Idx, interPair.first)].lambdaValue -= traits.stepSize;
+                traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineEnd[std::make_pair ((int)ntSeq1Idx, interPair.first)].lambdaValue -= traits.stepSize;
             }
-            /*std::cout << "L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue  << " W1:" << interPair.second.weight
-                      <<  "\t L2:" << interPair.second.lineM.first << "-" << interPair.second.lineM.second << " = WL:"
-                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].weight << " LA2:"
+            std::cout << "after)  L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue  << " W1:" << interPair.second.weight
+                      <<  "\t L2:" << interPair.second.lineM.first << "-" << interPair.second.lineM.second << " LA2:"
                       << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lambdaValue
+                      << " = W2:"
+                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].weight
                       << std::endl;
-            */
+
         }
         /*
         for (auto &interPair : traits.interactions[ntSeq1Idx])
@@ -834,30 +839,36 @@ void updateLambdaValues2(RnaAlignmentTraits & traits, LaraOptions const & option
     {
         double totLamb = 0, usedLamb = 0;
         std::cout << "Print new Lambda " << std::endl;
-        for (int ntSeq1Idx = 0; ntSeq1Idx < length(traits.interactions); ++ntSeq1Idx)
+        for (unsigned ntSeq1Idx = 0u; ntSeq1Idx < length(traits.interactions); ++ntSeq1Idx)
         {
             for (auto &interPair : traits.interactions[ntSeq1Idx])
             {
-                for (auto &endPair : interPair.second.lineEnd)
-                {
-                    std::cout << "L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue
+//                for (auto &endPair : interPair.second.lineEnd)
+//                {
+//                    std::cout << "L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue
+//                              << " W1:" << interPair.second.weight
+//                              << "\t L2:" << endPair.second.posSeq1 << "-" << endPair.second.posSeq2 << " = WL:"
+//                              << endPair.second.weight << " LA2:"
+//                              << traits.interactions[endPair.second.posSeq1][endPair.second.posSeq2].lambdaValue
+//                              << std::endl;
+//                }
+//                for (auto &beginPair : interPair.second.lineBegin)
+//                {
+//                    std::cout << "L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue
+//                              << " W1:" << interPair.second.weight
+//                              << "\t L2:" << beginPair.second.posSeq1 << "-" << beginPair.second.posSeq2 << " = WL:"
+//                              << beginPair.second.weight << " LA2:"
+//                              << traits.interactions[beginPair.second.posSeq1][beginPair.second.posSeq2].lambdaValue
+//                              << std::endl;
+//                }
+                std::cout << "L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue
                               << " W1:" << interPair.second.weight
-                              << "\t L2:" << endPair.second.posSeq1 << "-" << endPair.second.posSeq2 << " = WL:"
-                              << endPair.second.weight << " LA2:"
-                              << traits.interactions[endPair.second.posSeq1][endPair.second.posSeq2].lambdaValue
+                              << "\t L2:" << interPair.second.lineM.first << "-" << interPair.second.lineM.second << " = LA2:"
+                              << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lambdaValue
+                              << " W2:"
+                              << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].weight
                               << std::endl;
-                    totLamb = totLamb + interPair.second.lambdaValue + traits.interactions[endPair.second.posSeq1][endPair.second.posSeq2].lambdaValue;
-                }
-                for (auto &beginPair : interPair.second.lineBegin)
-                {
-                    std::cout << "L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue
-                              << " W1:" << interPair.second.weight
-                              << "\t L2:" << beginPair.second.posSeq1 << "-" << beginPair.second.posSeq2 << " = WL:"
-                              << beginPair.second.weight << " LA2:"
-                              << traits.interactions[beginPair.second.posSeq1][beginPair.second.posSeq2].lambdaValue
-                              << std::endl;
-                    totLamb = totLamb + interPair.second.lambdaValue + traits.interactions[beginPair.second.posSeq1][beginPair.second.posSeq2].lambdaValue;
-                }
+                totLamb = totLamb + interPair.second.lambdaValue;
             }
         }
         std::cout <<"Stepsize = " << traits.stepSize << " total lambda = " << totLamb << " used lambda = " << usedLamb << std::endl;

@@ -126,8 +126,8 @@ struct InterLine
     double lambdaValue{0};
     double weight{0};
     PositionPair lineM; // MaxLine associated
-    std::map<PositionPair, InterLinePosWeight> lineBegin;
-    std::map<PositionPair, InterLinePosWeight> lineEnd;
+    std::map<PositionPair, InterLinePosWeight> lineBegin; // close loops to the left
+    std::map<PositionPair, InterLinePosWeight> lineEnd;   // close loops to the right
 
     //TODO remove these
     bool closedLoop{false};
@@ -155,9 +155,9 @@ struct RnaInteraction
     bool fromUBPairing{false};
 };
 
-typedef seqan::String<std::map<unsigned, InterLine> > OutgoingInteractions; //This is a sort of map, with first index we access vector, while with second index we access the map
+//This is a sort of map, with first index we access seq1, while with second index we access the seq2 (map)
+typedef seqan::String<std::map<unsigned, InterLine> > OutgoingInteractions;
 typedef seqan::String<std::map<unsigned, InterLinePosWeight> > NewLambdasVect; // This structure will be used for update lambdas
-
 typedef seqan::Score<double, RnaStructureScore<RnaScoreMatrix, OutgoingInteractions> > LaraScoringScheme;
 
 struct bestAlign

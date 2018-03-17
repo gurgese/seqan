@@ -706,7 +706,8 @@ void updateLambdaValues2(RnaAlignmentTraits & traits)
                          << std::endl;
                 endPair.second.lambdaValue -= traits.stepSize;
                 traits.interactions[endPair.second.posSeq1][endPair.second.posSeq2].lineBegin[std::make_pair(ntSeq1Idx, interPair.first)].lambdaValue += traits.stepSize;
-                std::cout << endPair.second.lambdaValue << "\t" <<
+                std::cout << ntSeq1Idx << ":" << interPair.first << " = " << endPair.second.lambdaValue << "\t|\t" <<
+                          endPair.second.posSeq1 << ":" << endPair.second.posSeq2 << " = " <<
                           traits.interactions[endPair.second.posSeq1][endPair.second.posSeq2].lineBegin[std::make_pair(ntSeq1Idx, interPair.first)].lambdaValue
                         << std::endl;
 
@@ -734,7 +735,8 @@ void updateLambdaValues2(RnaAlignmentTraits & traits)
                           << std::endl;
                 beginPair.second.lambdaValue -= traits.stepSize;
                 traits.interactions[beginPair.second.posSeq1][beginPair.second.posSeq2].lineEnd[std::make_pair(ntSeq1Idx, interPair.first)].lambdaValue += traits.stepSize;
-                std::cout << beginPair.second.lambdaValue << "\t" <<
+                std::cout << ntSeq1Idx << ":" << interPair.first << " = " << beginPair.second.lambdaValue << "\t|\t" <<
+                          beginPair.second.posSeq1 << ":" << beginPair.second.posSeq2 << " = " <<
                           traits.interactions[beginPair.second.posSeq1][beginPair.second.posSeq2].lineEnd[std::make_pair(ntSeq1Idx, interPair.first)].lambdaValue
                           << std::endl;
                 /*

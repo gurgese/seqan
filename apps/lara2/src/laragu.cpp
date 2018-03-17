@@ -344,7 +344,7 @@ int main (int argc, char const ** argv)
                 }
 
                 // Update subgradients using the new unclosed interactions.
-                updateLambdaValues2(traits); //TODO remove previous function
+                updateLambdaValues2(traits, options); //TODO remove previous function
             }
             saveBestAligns(traits, alignments[idx], upperBoundScores[idx], iter);
         }

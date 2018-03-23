@@ -760,13 +760,13 @@ void updateLambdaValues2(RnaAlignmentTraits & traits, LaraOptions const & option
     {
         for (auto &interPair : traits.interactions[ntSeq1Idx])
         {
-            std::cout << "before) L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue
-                      << " W1:" << interPair.second.weight
-                      << "\t L2:" << interPair.second.lineM.first << "-" << interPair.second.lineM.second << " LA2:"
-                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lambdaValue
-                      << " = W2:"
-                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].weight
-                      << std::endl;
+//            std::cout << "before) L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue
+//                      << " W1:" << interPair.second.weight
+//                      << "\t L2:" << interPair.second.lineM.first << "-" << interPair.second.lineM.second << " LA2:"
+//                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lambdaValue
+//                      << " = W2:"
+//                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].weight
+//                      << std::endl;
 
             interPair.second.lambdaValue -= traits.stepSize; // gamma
             traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lambdaValue += traits.stepSize;
@@ -780,12 +780,12 @@ void updateLambdaValues2(RnaAlignmentTraits & traits, LaraOptions const & option
                 interPair.second.lineBegin[std::make_pair (interPair.second.lineM.first, interPair.second.lineM.second)].lambdaValue += traits.stepSize;
                 traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lineEnd[std::make_pair ((int)ntSeq1Idx, interPair.first)].lambdaValue -= traits.stepSize;
             }
-            std::cout << "after)  L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue  << " W1:" << interPair.second.weight
-                      <<  "\t L2:" << interPair.second.lineM.first << "-" << interPair.second.lineM.second << " LA2:"
-                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lambdaValue
-                      << " = W2:"
-                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].weight
-                      << std::endl;
+//            std::cout << "after)  L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue  << " W1:" << interPair.second.weight
+//                      <<  "\t L2:" << interPair.second.lineM.first << "-" << interPair.second.lineM.second << " LA2:"
+//                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].lambdaValue
+//                      << " = W2:"
+//                      << traits.interactions[interPair.second.lineM.first][interPair.second.lineM.second].weight
+//                      << std::endl;
 
         }
         /*
@@ -871,7 +871,7 @@ void updateLambdaValues2(RnaAlignmentTraits & traits, LaraOptions const & option
                 totLamb = totLamb + interPair.second.lambdaValue;
             }
         }
-        std::cout <<"Stepsize = " << traits.stepSize << " total lambda = " << totLamb << " used lambda = " << usedLamb << std::endl;
+        std::cout <<"Stepsize = " << traits.stepSize << " total lambda = " << totLamb << std::endl;
     }
 
 

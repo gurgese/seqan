@@ -82,7 +82,7 @@ double computeLowerBoundScore(InteractionScoreMap const & validInteractionScores
     lemon::MaxWeightedMatching<lemon::SmartGraph, EdgeMap> mwm(lemonG, weight);
     mwm.run();
     return mwm.matchingWeight();
-};
+}
 
 }
 

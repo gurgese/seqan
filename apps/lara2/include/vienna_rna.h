@@ -74,7 +74,7 @@ void computeBppMatrix(RnaRecord & rnaRecord, double thrBppm, bool logStructureSc
     RnaStructureGraph bppMatrGraph;
 
     // apply default model details
-    vrna_md_t md_p;
+    vrna_md_t md_p{};
     set_model_details(&md_p);
 
     // get a vrna_fold_compound with MFE and PF DP matrices and default model details
@@ -82,8 +82,9 @@ void computeBppMatrix(RnaRecord & rnaRecord, double thrBppm, bool logStructureSc
     vrna_fold_compound_t *vc = vrna_fold_compound(toCString(seq), &md_p, VRNA_OPTION_MFE | VRNA_OPTION_PF);
 
     // save gibbs free energy
-    char structure[length(rnaRecord.sequence) + 1];
-    float gibbs = (double)vrna_pf(vc, structure);
+    std::vector<char> structure;
+    structure.resize(length(rnaRecord.sequence) + 1);
+    float gibbs = vrna_pf(vc, structure.data());
     bppMatrGraph.energy = gibbs;
 
     vrna_plist_t *pl1;

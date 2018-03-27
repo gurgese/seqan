@@ -123,7 +123,7 @@ void initialAlignment(String<double> & results, StringSet<RnaAlignment> & alignm
         else
             results = localAlignment(alignments, scoreMatrix, DynamicGaps());
     }
-};
+}
 
 // ----------------------------------------------------------------------------
 // Function structuralAlignment()
@@ -178,7 +178,7 @@ void structuralAlignment(String<double> & results, StringSet<RnaAlignment> & ali
 
         }
     }
-};
+}
 
 // ----------------------------------------------------------------------------
 // Function crossproduct()

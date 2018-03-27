@@ -153,6 +153,7 @@ int main (int argc, char const ** argv)
         traits.structureScore.matrix = options.laraScoreMatrix;
         traits.structureScore.interactions = & traits.interactions;
         traits.stepSizeScaling = options.stepSizeScaling;
+        _V(options, "sequence lengths: " << numVertices(traits.bppGraphH.inter) << ", " << numVertices(traits.bppGraphV.inter));
     }
 
     // Create the alignment data structure that will host the alignments with small difference between bounds.
@@ -282,6 +283,14 @@ int main (int argc, char const ** argv)
             }
             */
 
+            _V(options,
+               "(" << iter << ") \tbest: " << std::setw(13) << traits.bestUpperBound << " / "
+                   << std::setw(13) << traits.bestLowerBound
+                   << " \t current: " << std::setw(10) << traits.upperBound << " / "
+                   << std::setw(10) << traits.lowerBound
+                   << "\t\t(" << traits.numberOfSubgradients << ")");
+
+
             traits.bestUpperBound = std::min(traits.bestUpperBound, traits.upperBound);
             traits.bestLowerBound = std::max(traits.bestLowerBound, traits.lowerBound);
 
@@ -367,7 +376,7 @@ int main (int argc, char const ** argv)
                 traits.structureScore.interactions = & traits.interactions;
         }
         // Progress bar.
-        if (options.verbose == 1) std::cerr << "|";
+//        if (options.verbose == 1) std::cerr << "|";
     }
 
     if (options.verbose > 0) std::cerr << std::endl;

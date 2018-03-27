@@ -75,9 +75,9 @@ void createInterLines(OutgoingInteractions & interactions,
         // check for all adjacent pairs whether they are a line in the current alignment
         for (RnaAdjacencyIterator adjItH(bppH, ntSeq1Idx); !atEnd(adjItH); goNext(adjItH))
         {
-            if(value(adjItH) > ntSeq1Idx)
+            if(value(adjItH) > ntSeq1Idx) // only choose rightbound interactions
             {
-                for (unsigned ntSeq2Idx =  numVertices(bppV) -1; ntSeq2Idx > 0; --ntSeq2Idx)
+                for (unsigned ntSeq2Idx = numVertices(bppV) - 1; ntSeq2Idx > 0; --ntSeq2Idx)
                 {
                     // skip if there are no interactions
                     if (degree(bppV, ntSeq2Idx) == 0) // || degree(bppV, lineL.second) == 0)
@@ -684,12 +684,13 @@ void updateLambdaValues2(RnaAlignmentTraits & traits, LaraOptions const & option
 //    std::cout << "Evaluate Lambda " << std::endl;
     //std::vector<InterLinePosWeight> newLambdas;
     //InterLinePosWeight newLambdaElem; // In this structure the weight field is used for storing the best Lambda.
-    for (unsigned ntSeq1Idx = 0u; ntSeq1Idx < length(traits.interactions); ++ntSeq1Idx) // position in seq1
+    //for (unsigned ntSeq1Idx = 0u; ntSeq1Idx < length(traits.interactions); ++ntSeq1Idx) // position in seq1
+    for (std::map<unsigned, InterLine> & interaction : traits.interactions)
     {
-        for (auto &interPair : traits.interactions[ntSeq1Idx]) // the current line [seq2 pos, InterLine]
+        for (std::pair<unsigned const, InterLine> & interPair : interaction) // the current line [seq2 pos, InterLine]
         {
             InterLinePosWeight newLambdaElem; // In this structure the weight field is used for storing the best Lambda.
-            for (auto &endPair : interPair.second.lineEnd) // scan pairs on the right
+            for (std::pair<PositionPair const, InterLinePosWeight> & endPair : interPair.second.lineEnd) // scan pairs on the right
             {
                 /*std::cout << "L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue  << " W1:" << interPair.second.weight
                           <<  "\t L2:" << endPair.second.posSeq1 << "-" << endPair.second.posSeq2 << " = WL:"
@@ -707,7 +708,7 @@ void updateLambdaValues2(RnaAlignmentTraits & traits, LaraOptions const & option
                     newLambdaElem.lambdaValue = endPair.second.lambdaValue;
                 }
             }
-            for (auto &beginPair : interPair.second.lineBegin) // scan pairs on the left
+            for (std::pair<PositionPair const, InterLinePosWeight> & beginPair : interPair.second.lineBegin) // scan pairs on the left
             {
                 /*std::cout << "L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue  << " W1:" << interPair.second.weight
                           <<  "\t L2:" << beginPair.second.posSeq1 << "-" << beginPair.second.posSeq2 << " = WL:"
@@ -758,7 +759,7 @@ void updateLambdaValues2(RnaAlignmentTraits & traits, LaraOptions const & option
 //    std::cout << "Update Lambda " << std::endl;
     for (unsigned ntSeq1Idx = 0u; ntSeq1Idx < length(traits.interactions); ++ntSeq1Idx)
     {
-        for (auto &interPair : traits.interactions[ntSeq1Idx])
+        for (std::pair<unsigned const, InterLine> & interPair : traits.interactions[ntSeq1Idx])
         {
 //            std::cout << "before) L1:" << ntSeq1Idx << "-" << interPair.first << " LA1:" << interPair.second.lambdaValue
 //                      << " W1:" << interPair.second.weight

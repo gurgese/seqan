@@ -95,10 +95,10 @@ void createInterLines(OutgoingInteractions & interactions,
                             InterLinePosWeight ilpw;
 
                             //Values to be used for th count of lines that do not close any loop
-                            if(interactions[ntSeq1Idx].count(value(adjItV)) == 0)
-                                ++numberOfEdgesInClosedLoops;
-                            if(interactions[value(adjItH)].count(ntSeq2Idx) == 0)
-                                ++numberOfEdgesInClosedLoops;
+//                            if(interactions[ntSeq1Idx].count(value(adjItV)) == 0)
+//                                ++numberOfEdgesInClosedLoops;
+//                            if(interactions[value(adjItH)].count(ntSeq2Idx) == 0)
+//                                ++numberOfEdgesInClosedLoops;
 
                             if(interactions[ntSeq1Idx].count(value(adjItV)) == 0 ||
                                     interactions[ntSeq1Idx][value(adjItV)].weight < strScore)
@@ -260,6 +260,8 @@ double computeLowerBoundGreedy(RnaAlignmentTraits & traits)
     RnaInteractionGraph const & bppH = traits.bppGraphH.inter;
     RnaInteractionGraph const & bppV = traits.bppGraphV.inter;
 
+    traits.numberOfSubgradients = 0;
+
     //TODO modify this piece of code for keeping the already computed closed loops from traits.interactions
     // add edges: go through all lines
     for (unsigned lineLIdx = 0; lineLIdx < length(traits.lines); ++lineLIdx)
@@ -269,6 +271,9 @@ double computeLowerBoundGreedy(RnaAlignmentTraits & traits)
         // skip if there are no interactions
         if (degree(bppH, lineL.first) == 0 || degree(bppV, lineL.second) == 0)
             continue;
+
+        // count number of outgoing max interctions
+        traits.numberOfSubgradients += 2;
 
         // check for all adjacent pairs whether they are a line in the current alignment
         for (RnaAdjacencyIterator adjItH(bppH, lineL.first); !atEnd(adjItH); goNext(adjItH))
@@ -296,7 +301,13 @@ double computeLowerBoundGreedy(RnaAlignmentTraits & traits)
 //        continue;
     }
 
-    return maximumWeightedMatchingGreedy<5>(traits.isInMwmSolution, traits.interactionMatchingGraph);
+    double mwmScore = maximumWeightedMatchingGreedy<5>(traits.isInMwmSolution, traits.interactionMatchingGraph);
+    for (bool edge : traits.isInMwmSolution)
+        if(edge)
+            traits.numberOfSubgradients -= 2;
+    SEQAN_ASSERT_GEQ(traits.numberOfSubgradients, 0);
+
+    return mwmScore;
 }
 
 // ----------------------------------------------------------------------------

@@ -1,5 +1,7 @@
 build
 dox/html
+dox/dox_only.sh
+dox/run.sh
 manual/build
 sandbox
 !sandbox/CMakeLists.txt

@@ -191,11 +191,12 @@ int main (int argc, char const ** argv)
 
             traits.lowerBound = computeLowerBoundGreedy(traits); // TODO update this function using closed loops available in InterLine datastructure
 
-            traits.numberOfEdgesInMwmSolution = 0;
-            for(bool edge: traits.isInMwmSolution)
-                if(edge)
-                    traits.numberOfEdgesInMwmSolution += 2;
-            traits.numberOfSubgradients = traits.numberOfEdgesInClosedLoops - traits.numberOfEdgesInMwmSolution;
+//            traits.numberOfEdgesInMwmSolution = 0;
+//            for (bool edge : traits.isInMwmSolution)
+//                if(edge)
+//                    traits.numberOfEdgesInMwmSolution += 2;
+//            traits.numberOfSubgradients = traits.numberOfEdgesInClosedLoops - traits.numberOfEdgesInMwmSolution;
+//            SEQAN_ASSERT_GEQ(traits.numberOfSubgradients, 0);
 
             // Set upper bound (i.e. the relaxed solution = Lagrangian dual).
             traits.upperBound = upperBoundScores[idx];

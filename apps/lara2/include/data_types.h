@@ -216,6 +216,8 @@ struct RnaAlignmentTraits
     unsigned nonDecreasingIterations{0u};
     // Score only from sequence comparison and gap costs.
     double sequenceScore{};
+    // Score only from lambda costs.
+    double lambdaScore{};
 
     //  Status when the minimum difference between the two bounds is detected
     TBestAlign forMinBound;

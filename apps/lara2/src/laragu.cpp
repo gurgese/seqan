@@ -284,6 +284,20 @@ int main (int argc, char const ** argv)
             }
             */
 
+
+            std::cout << "lines with stepSize = " << traits.stepSize << std::endl;
+            traits.lambdaScore = 0;
+            for(unsigned i = 0; i < length(traits.lines); ++i)
+            {
+                traits.lambdaScore += traits.structureScore.getLambdaValue(traits.lines[i].first, traits.lines[i].second);
+/*                std::cout << i << "\t" << traits.lines[i].first << "\t"
+                          << traits.lines[i].second << "\t"
+                          << traits.structureScore.getLambdaValue(traits.lines[i].first, traits.lines[i].second) << "\t"
+                          << traits.lambdaScore << std::endl;
+*/
+            }
+            traits.upperBound -= traits.lambdaScore;
+
             _V(options,
                "(" << iter << ") \tbest: " << std::setw(13) << traits.bestUpperBound << " / "
                    << std::setw(13) << traits.bestLowerBound
@@ -326,8 +340,10 @@ int main (int argc, char const ** argv)
                 //  Compute the step size for the subgradient update.
                 double const previousStepSize = traits.stepSize;
                 if (traits.numberOfSubgradients > 0)
-                    traits.stepSize = traits.stepSizeScaling * ((traits.bestUpperBound - traits.bestLowerBound)
+                    traits.stepSize = traits.stepSizeScaling * ((traits.upperBound - traits.lowerBound)
                                                                 / traits.numberOfSubgradients);
+//                    traits.stepSize = traits.stepSizeScaling * ((traits.bestUpperBound - traits.bestLowerBound)
+//                                                            / traits.numberOfSubgradients);
                 else
                     traits.stepSize = 0;
 

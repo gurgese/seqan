@@ -142,6 +142,7 @@ int main (int argc, char const ** argv)
     for (RnaAlignmentTraits & traits : alignmentTraits)
     {
         // The lambda structs are referenced by the index of the first sequence.
+        // ALL interaction lines are created but only the active during the alignment will be updated
         resize(traits.interactions, numVertices(traits.bppGraphH.inter));
         resize(traits.newLambdas, numVertices(traits.bppGraphH.inter));
         createInterLines(traits.interactions, traits.newLambdas, traits.numberOfEdgesInClosedLoops, traits.bppGraphH.inter, traits.bppGraphV.inter);
@@ -285,7 +286,7 @@ int main (int argc, char const ** argv)
             */
 
 
-            std::cout << "lines with stepSize = " << traits.stepSize << std::endl;
+//            std::cout << "lines with stepSize = " << traits.stepSize << std::endl;
             traits.lambdaScore = 0;
             for(unsigned i = 0; i < length(traits.lines); ++i)
             {
@@ -296,7 +297,7 @@ int main (int argc, char const ** argv)
                           << traits.lambdaScore << std::endl;
 */
             }
-            traits.upperBound -= traits.lambdaScore;
+//            traits.upperBound -= traits.lambdaScore;
 
             _V(options,
                "(" << iter << ") \tbest: " << std::setw(13) << traits.bestUpperBound << " / "
@@ -370,7 +371,7 @@ int main (int argc, char const ** argv)
                 }
 
                 // Update subgradients using the new unclosed interactions.
-                updateLambdaValues2(traits, options); //TODO remove previous function
+                updateLambdaValues3(traits, options); //TODO remove previous function
             }
             saveBestAligns(traits, alignments[idx], upperBoundScores[idx], iter);
         }
